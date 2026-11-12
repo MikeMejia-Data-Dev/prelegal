@@ -1,0 +1,34 @@
+License for the contents of this "templates" directory
+======================================================
+
+All legal agreement templates in this directory are Common Paper standard
+agreements, copied (unmodified) from the Common Paper GitHub organization:
+
+    https://github.com/CommonPaper
+
+They are licensed under the Creative Commons Attribution 4.0 International
+License (CC BY 4.0):
+
+    https://creativecommons.org/licenses/by/4.0/
+
+Attribution: Common Paper (https://commonpaper.com). Free to use and modify under CC BY 4.0.
+
+Source of each file:
+
+    Mutual-NDA.md                  https://github.com/CommonPaper/Mutual-NDA
+    Mutual-NDA-coverpage.md        https://github.com/CommonPaper/Mutual-NDA
+    CSA.md                         https://github.com/CommonPaper/CSA
+    sla.md                         https://github.com/CommonPaper/SLA
+    DPA.md                         https://github.com/CommonPaper/DPA
+    design-partner-agreement.md    https://github.com/CommonPaper/Design-Partner-Agreement
+    psa.md                         https://github.com/CommonPaper/PSA
+    Partnership-Agreement.md       https://github.com/CommonPaper/Partnership-Agreement
+    BAA.md                         https://github.com/CommonPaper/BAA
+    Software-License-Agreement.md  https://github.com/CommonPaper/Software-License-Agreement
+    Pilot-Agreement.md             https://github.com/CommonPaper/Pilot-Agreement
+    AI-Addendum.md                 https://github.com/CommonPaper/AI-Addendum
+
+If you modify these templates, you must indicate that changes were made, as
+required by CC BY 4.0. This license applies only to the files in this
+directory; the rest of the Prelegal project is covered by the LICENSE file in
+the repository root.
