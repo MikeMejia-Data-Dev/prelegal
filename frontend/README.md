@@ -17,13 +17,16 @@ Run these from `frontend/`:
 | --------------- | ----------------------------------------- |
 | `npm install`   | Install dependencies                      |
 | `npm run dev`   | Dev server at http://localhost:3000       |
-| `npm test`      | Unit tests (Vitest)                       |
+| `npm test`      | Unit and component tests (Vitest)         |
+| `npm run test:e2e` | End-to-end tests in Chrome (Playwright) |
 | `npm run lint`  | ESLint                                    |
 | `npm run build` | Production build (static page)            |
 | `npm start`     | Serve the production build                |
 
 `.npmrc` sets `legacy-peer-deps=true`, because npm 10 crashes while resolving Vitest 4's optional peer
 dependencies.
+
+See [`TESTING.md`](TESTING.md) for test coverage and the manual test script.
 
 ## How it works
 
@@ -39,8 +42,11 @@ dependencies.
 
 ## Known limitations
 
-- The PDF uses the built-in Helvetica font, so characters outside Latin-1 (for example Cyrillic,
-  CJK or "Ł") won't render in the PDF. The Word export isn't affected.
+- The PDF uses the bundled Noto Sans font (`src/lib/nda/export/fonts`, SIL OFL), which covers Latin,
+  Greek and Cyrillic. It has no glyphs for CJK, Arabic, Hebrew, emoji and some symbols such as `→`.
+  If the form contains any of these, the PDF button is disabled with a message listing the
+  characters, and the Word export still works. If you change the fonts, run
+  `node scripts/generate-pdf-charset.mjs` to regenerate the supported character list.
 
 ## License
 
