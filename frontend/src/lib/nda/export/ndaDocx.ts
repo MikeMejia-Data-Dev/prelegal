@@ -32,6 +32,16 @@ function runs(items: Run[], size?: number): ParagraphChild[] {
   );
 }
 
+/**
+ * Text runs for user-entered text. Word ignores "\n" inside a run, so each
+ * line after the first starts with an explicit line break (<w:br/>).
+ */
+function textLines(text: string, options: { color?: string } = {}): TextRun[] {
+  return text
+    .split(/\r?\n/)
+    .map((line, i) => new TextRun({ text: line, break: i === 0 ? undefined : 1, ...options }));
+}
+
 const cellBorder = { style: BorderStyle.SINGLE, size: 4, color: "9CA3AF" };
 const borders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
 
@@ -68,8 +78,8 @@ function partyTable(nda: NdaDocument): Table {
             ],
             26,
           ),
-          cell([new Paragraph(row.party1)], 37),
-          cell([new Paragraph(row.party2)], 37),
+          cell([new Paragraph({ children: textLines(row.party1) })], 37),
+          cell([new Paragraph({ children: textLines(row.party2) })], 37),
         ],
       }),
   );
@@ -89,7 +99,7 @@ export async function ndaToDocxBlob(nda: NdaDocument): Promise<Blob> {
         ? [new Paragraph({ keepNext: true, children: [new TextRun({ text: field.description, size: 18, color: GRAY })] })]
         : []),
       new Paragraph({
-        children: [new TextRun({ text: field.value, color: field.missing ? AMBER : undefined })],
+        children: textLines(field.value, { color: field.missing ? AMBER : undefined }),
         spacing: { after: 120 },
       }),
     ]),

@@ -185,16 +185,29 @@ describe("NdaCreator", () => {
     expect(container.querySelector("img")).toBeNull();
   });
 
-  // Found in manual testing: the preview <dd> has no `white-space: pre-line`,
-  // so multi-line Modifications show on one line (the PDF keeps the breaks).
-  // Flip to `it` once fixed.
-  it.fails("preserves line breaks in Modifications in the preview [known bug]", async () => {
+  // Regression (found in manual testing): multi-line Modifications showed on one line.
+  it("preserves line breaks in Modifications in the preview", async () => {
     const user = userEvent.setup();
     render(<NdaCreator standardTerms={terms} />);
     await user.type(screen.getByRole("textbox", { name: /^MNDA Modifications/ }), "1. A.{Enter}2. B.");
     const dd = coverValue("MNDA Modifications");
     expect(dd.textContent).toBe("1. A.\n2. B.");
     expect(dd.className).toMatch(/whitespace-pre-(line|wrap)/);
+  });
+
+  it("blocks the PDF, but not Word, when names use characters the PDF font lacks", async () => {
+    const user = userEvent.setup();
+    render(<NdaCreator standardTerms={terms} />);
+    await fillRequired(user);
+    await user.type(party(2).getByRole("textbox", { name: /^Signer name/ }), "山田 → ok");
+    expect(pdfButton()).toBeDisabled();
+    expect(wordButton()).toBeEnabled();
+    expect(screen.getByRole("note")).toHaveTextContent("The PDF can't display these characters: 山 田 →");
+
+    await user.clear(party(2).getByRole("textbox", { name: /^Signer name/ }));
+    await user.type(party(2).getByRole("textbox", { name: /^Signer name/ }), "Łódź Жуков Ελένη Nguyễn");
+    expect(pdfButton()).toBeEnabled();
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 
   it("renders all 11 Standard Terms clauses in the preview", () => {

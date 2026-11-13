@@ -17,15 +17,18 @@
 - **`components/NdaCreator.test.tsx`**: live preview, required-field gating of downloads, busy state / double-click protection, error handling, term radio toggles, HTML escaping, accessible names.
 - **`e2e/nda.spec.ts`**: real page load with no console errors (hydration), real PDF and Word downloads, responsive layout, keyboard focus order.
 
-### Known bugs (tests marked `it.fails`)
+### Regression tests for fixed bugs
 
-These tests describe the correct behaviour and currently fail on purpose. When a bug is fixed, Vitest will report the test as unexpectedly passing; change `it.fails` to `it`.
+These bugs were found by the review and the tests below, and are now fixed. Each has a test that would fail if it came back:
 
-1. DOCX: line breaks in multi-line Purpose/Modifications are lost (`ndaDocx.ts` writes `\n` inside `<w:t>`).
-2. PDF: characters outside Latin-1 (e.g. `Łódź`, Cyrillic, CJK) are garbled because the built-in Helvetica font is used (`NdaPdf.tsx`).
-3. PDF: a stray hyphen is inserted where a line breaks after a bold run, e.g. Clause 1 reads "Confidential Information-" / "”)".
-4. PDF: a cover field taller than a page (very long Modifications) is clipped and the rest silently dropped (`wrap={false}`).
-5. Preview: multi-line Modifications are shown on one line.
+1. DOCX: line breaks in multi-line Purpose/Modifications were lost. Now written as `<w:br/>`.
+2. PDF: characters outside Latin-1 (e.g. `Łódź`, Cyrillic) were garbled by the built-in Helvetica font. Now uses the bundled Noto Sans (`src/lib/nda/export/fonts`, SIL OFL). For characters Noto Sans lacks (CJK, Arabic, Hebrew, emoji, some symbols such as `→`), the PDF button is disabled with an explanation and Word stays available. After changing fonts, run `node scripts/generate-pdf-charset.mjs` (a test fails if you forget).
+3. PDF: a stray hyphen was inserted where a line broke after a bold run ("Confidential Information-"). Hyphenation points are now disabled.
+4. PDF: a cover field taller than a page was clipped and the rest dropped. Fields now flow across pages.
+5. Preview: multi-line Modifications were shown on one line.
+6. Preview and PDF: a long unbroken notice address stretched the preview table and overflowed the PDF cell. The preview table is fixed-layout; the PDF wraps long tokens after `@ . / _ -`.
+7. Download file names mangled accented company names (`Société` → `Soci-t`). Accents are now transliterated (`Łódź` → `Lodz`).
+8. No favicon (404 on every page load).
 
 ## Manual test script
 
@@ -46,14 +49,14 @@ Run `npm run dev` and open http://localhost:3000. Repeat the downloads in at lea
 | M11 | Resize to phone width (390px) | No horizontal scroll; form above preview |
 | M12 | Keyboard only: Tab through the form, Space on radios, Enter on download | All controls reachable and operable; focus visible |
 
-### Manual test results (2026-11-13, Chrome on Linux, LibreOffice for DOCX)
+### Manual test results
+
+**Initial run (2026-11-13, before fixes):** M1–M4, M6, M11, M12 passed. M5 (stray hyphen), M7 (preview and Word), M8 (PDF), M9 (preview and PDF) and M10 (PDF stopped at about line 86) failed. `/favicon.ico` returned 404.
+
+**After fixes (2026-11-13, production build via `next start`, Chrome on Linux, LibreOffice for DOCX):**
 
 | # | Result |
 | --- | --- |
-| M1–M4, M6, M11, M12 | Pass |
-| M5 | **Fail**: stray hyphen in Clause 1 ("Confidential Information-"); short cover pages can leave the attribution line alone on page 2 |
-| M7 | **Fail** in preview and Word (one line); pass in PDF |
-| M8 | **Fail** in PDF (`Łódź` → `Aódz`, Cyrillic/CJK → garbage); pass in preview and Word |
-| M9 | **Fail**: in the preview the long address stretches the Party 1 column and squeezes Party 2; in the PDF it overflows past the table border. Word wraps correctly |
-| M10 | **Fail**: PDF stops at about line 86 |
-| — | Minor: `/favicon.ico` returns 404 (no favicon in `src/app`) |
+| M1–M12 | Pass |
+| M8 | Latin Extended, Greek and Cyrillic render in the PDF. CJK and emoji disable the PDF with a message listing the characters; Word renders them |
+| M5 | Typical cover page (up to about 3 Modification lines) fits on page 1 with the signature table and attribution kept together; longer cover pages move the signature block to page 2 intact |

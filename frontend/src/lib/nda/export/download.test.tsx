@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildNda, defaultFormData } from "../buildNda";
@@ -9,6 +12,17 @@ const nda = buildNda(defaultFormData(new Date(2026, 10, 12)), { title: "Standard
 let clicked: { href: string; download: string; attached: boolean }[];
 
 beforeEach(() => {
+  // In the browser the PDF fonts are fetched over HTTP from the app; serve the
+  // bundled files from disk the way the Next.js server would.
+  const realFetch = globalThis.fetch;
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith(".ttf")) {
+      const file = path.join(__dirname, "fonts", path.basename(url.pathname));
+      return new Response(new Uint8Array(await readFile(file)));
+    }
+    return realFetch(input, init);
+  });
   vi.useFakeTimers({ toFake: ["setTimeout"] });
   clicked = [];
   URL.createObjectURL = vi.fn(() => "blob:mock-url");
@@ -21,6 +35,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("downloadNda", () => {

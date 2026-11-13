@@ -229,7 +229,9 @@ describe("ndaFileName edge cases", () => {
     ['A/B\\C:D*E?"F<G>H|I', "X", "Mutual-NDA-A-B-C-D-E-F-G-H-I-X.docx"],
     ["!!!", "Globex", "Mutual-NDA-Globex.docx"],
     ["Acme", "", "Mutual-NDA-Acme.docx"],
-    ["Société Générale", "Globex", "Mutual-NDA-Soci-t-G-n-rale-Globex.docx"],
+    ["Société Générale", "Globex", "Mutual-NDA-Societe-Generale-Globex.docx"],
+    ["Łódź Sp. z o.o.", "Ærø Straße", "Mutual-NDA-Lodz-Sp-z-o-o-AEro-Strasse.docx"],
+    ["山田株式会社", "Globex", "Mutual-NDA-Globex.docx"],
   ])("slugs %j + %j", (c1, c2, expected) => {
     expect(ndaFileName(withCompanies(c1, c2), "docx")).toBe(expected);
   });

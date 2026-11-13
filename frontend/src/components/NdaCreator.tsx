@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { buildNda, defaultFormData, ndaFileName, todayIso, validate } from "@/lib/nda/buildNda";
 import { downloadNda, type DownloadFormat } from "@/lib/nda/export/download";
+import { unsupportedPdfCharactersInForm } from "@/lib/nda/export/pdfText";
 import type { NdaFormData, StandardTerms } from "@/lib/nda/types";
 
 import { NdaForm } from "./NdaForm";
@@ -29,6 +30,11 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
   const nda = useMemo(() => buildNda(form, standardTerms), [form, standardTerms]);
   const errors = useMemo(() => validate(form), [form]);
   const canDownload = errors.length === 0 && busy === null;
+  // The PDF font cannot draw every script (e.g. CJK, Arabic, emoji); rather
+  // than produce a garbled agreement, block the PDF and point to Word.
+  const pdfUnsupported = useMemo(() => unsupportedPdfCharactersInForm(form), [form]);
+  const isEnabled = (format: DownloadFormat) =>
+    canDownload && !(format === "pdf" && pdfUnsupported.length > 0);
 
   async function handleDownload(format: DownloadFormat) {
     setBusy(format);
@@ -54,7 +60,7 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
               key={format}
               type="button"
               onClick={() => handleDownload(format)}
-              disabled={!canDownload}
+              disabled={!isEnabled(format)}
               className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               {busy === format ? "Preparing…" : label}
@@ -69,6 +75,12 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
                 ))}
               </ul>
             </div>
+          )}
+          {pdfUnsupported.length > 0 && (
+            <p className="w-full text-sm text-amber-700" role="note">
+              The PDF can&apos;t display these characters: {pdfUnsupported.join(" ")}. Download the Word
+              document instead, or replace them.
+            </p>
           )}
           {downloadError && (
             <p className="w-full text-sm text-rose-600" role="alert">

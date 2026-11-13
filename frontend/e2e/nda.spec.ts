@@ -1,5 +1,7 @@
 import { readFile } from "node:fs/promises";
 
+import JSZip from "jszip";
+
 import { expect, test, type Page } from "@playwright/test";
 
 const coverPage = (page: Page) => page.getByRole("region", { name: "Cover Page" });
@@ -17,8 +19,7 @@ test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => {
-    // The app has no favicon yet; Chrome's automatic request for it 404s.
-    if (m.type() === "error" && !m.location().url.endsWith("/favicon.ico")) errors.push(m.text());
+    if (m.type() === "error") errors.push(m.text());
   });
   await page.goto("/");
   // Fail on hydration mismatches or other runtime errors.
@@ -92,4 +93,52 @@ test("form controls are reachable by keyboard", async ({ page }) => {
   await page.getByRole("textbox", { name: /^Purpose/ }).focus();
   await page.keyboard.press("Tab");
   await expect(page.getByLabel(/^Effective Date/)).toBeFocused();
+});
+
+test("PDF embeds the Unicode font and keeps Latin Extended / Cyrillic names", async ({ page }) => {
+  await fillRequired(page);
+  await party(page, 2).getByRole("textbox", { name: /^Company/ }).fill("Łódź Sp. z o.o.");
+  await party(page, 2).getByRole("textbox", { name: /^Signer name/ }).fill("Жуков");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download PDF" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("Mutual-NDA-Acme-Inc-Lodz-Sp-z-o-o.pdf");
+  const pdf = (await readFile((await download.path())!)).toString("latin1");
+  expect(pdf).toMatch(/\/BaseFont \/[A-Z]{6}\+NotoSans/);
+});
+
+test("PDF is blocked with an explanation for characters the font lacks; Word still works", async ({ page }) => {
+  await fillRequired(page);
+  await party(page, 2).getByRole("textbox", { name: /^Signer name/ }).fill("山田");
+  await expect(page.getByRole("button", { name: "Download PDF" })).toBeDisabled();
+  await expect(page.getByRole("note")).toContainText("The PDF can't display these characters: 山 田");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download Word" }).click(),
+  ]);
+  const zip = await JSZip.loadAsync(await readFile((await download.path())!));
+  expect(await zip.file("word/document.xml")!.async("string")).toContain("山田");
+});
+
+test("a long email address wraps inside the preview table without stretching its column", async ({ page }) => {
+  await fillRequired(page);
+  await party(page, 1)
+    .getByRole("textbox", { name: /^Notice address/ })
+    .fill("averyveryverylongemailaddresswithnobreaks.legal.department@subsidiary.example-corporation.com");
+  const widths = await coverPage(page)
+    .locator("thead th")
+    .evaluateAll((ths) => ths.map((th) => Math.round(th.getBoundingClientRect().width)));
+  expect(Math.abs(widths[1] - widths[2])).toBeLessThanOrEqual(1);
+  const table = await coverPage(page).locator("table").boundingBox();
+  const wrapper = await coverPage(page).locator("table").locator("xpath=..").boundingBox();
+  expect(table!.width).toBeLessThanOrEqual(wrapper!.width + 1);
+});
+
+test("multi-line Modifications keep their line breaks in the preview", async ({ page }) => {
+  await page.getByRole("textbox", { name: /^MNDA Modifications/ }).fill("1. Section 3(d) deleted.\n2. Term extended.");
+  const value = coverPage(page).locator("dt", { hasText: "MNDA Modifications" }).locator("xpath=following-sibling::dd[last()]");
+  const box = await value.boundingBox();
+  const lineHeight = await value.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
+  expect(box!.height).toBeGreaterThan(lineHeight * 1.5);
 });

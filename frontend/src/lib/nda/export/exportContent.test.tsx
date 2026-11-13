@@ -114,11 +114,11 @@ describe("DOCX content", () => {
     expect(text).toContain("Šimkus Жуков 山田");
   });
 
-  // Reviewer finding: multi-line Purpose / Modifications are joined onto one
-  // line in Word. Marked `fails` to document the bug; flip to `it` once fixed.
+  // Regression: multi-line Purpose / Modifications used to be joined onto one
+  // line in Word.
   // Word renders a raw "\n" inside <w:t> as a space, so a real break must be
   // a <w:br/> between two text runs.
-  it.fails("keeps line breaks in multi-line Modifications [known bug]", async () => {
+  it("keeps line breaks in multi-line Modifications", async () => {
     const xml = await docxXml(makeNda({ modifications: "1. Section 3(d) deleted.\n2. Term extended." }));
     expect(xml).not.toMatch(/<w:t[^>]*>[^<]*\n[^<]*<\/w:t>/);
     expect(xml).toMatch(/1\. Section 3\(d\) deleted\.<\/w:t>[\s\S]*?<w:br\/>[\s\S]*?2\. Term extended\./);
@@ -134,6 +134,13 @@ describe("PDF content", () => {
     expect(squash(pages.slice(1).join(" "))).toContain(squash("Standard Terms"));
   });
 
+  it("fits the whole cover page, including the attribution, on page 1 for typical input", async () => {
+    const pages = await pdfPages(makeNda({ modifications: "1. First change.\n2. Second change.\n3. Third change." }));
+    expect(pages[0]).toContain("PARTY 1");
+    expect(squash(pages[0])).toContain(squash("Standard Terms unmodified."));
+    expect(squash(pages[1])).toContain(squash("1. Introduction."));
+  });
+
   it("contains every cover field value and party value", async () => {
     const text = squash((await pdfPages(nda)).join(" "));
     for (const field of nda.coverFields) expect(text).toContain(squash(field.value));
@@ -147,10 +154,10 @@ describe("PDF content", () => {
     for (const clause of terms.clauses) expect(text).toContain(squash(`${clause.number}. ${clause.title}.`));
   });
 
-  // Found by this test: react-pdf inserts a hyphen where a line breaks between
-  // a bold run and the following text, e.g. "Confidential Information-”)".
-  // Legal text must be verbatim. Flip to `it` once fixed.
-  it.fails("contains all 11 Standard Terms clauses verbatim [known bug: stray hyphen]", async () => {
+  // Regression: react-pdf inserted a hyphen where a line broke between a bold
+  // run and the following text ("Confidential Information-" / "”)").
+  // Legal text must be verbatim.
+  it("contains all 11 Standard Terms clauses verbatim, with no inserted hyphens", async () => {
     const text = squash((await pdfPages(nda)).join(" "));
     for (const clause of terms.clauses) {
       expect(text).toContain(squash(`${clause.title}. ${clause.body.map((r) => r.text).join("")}`));
@@ -162,18 +169,26 @@ describe("PDF content", () => {
     expect(text).toContain("Société Générale");
   });
 
-  // Reviewer finding: the built-in Helvetica font only covers WinAnsi, so
-  // characters outside Latin-1 are lost in the PDF. Flip to `it` once fixed.
-  it.fails("keeps non-Latin-1 characters in party names [known bug]", async () => {
+  // Regression: the built-in Helvetica font only covers WinAnsi, so
+  // characters outside Latin-1 were garbled ("Łódź" -> "Aódz").
+  it("keeps Latin Extended and Cyrillic characters in party names", async () => {
     const text = (await pdfPages(makeNda({ party2: { company: "Łódź Sp. z o.o.", name: "Жуков", title: "", noticeAddress: "" } }))).join(" ");
     expect(text).toContain("Łódź Sp. z o.o.");
     expect(text).toContain("Жуков");
   });
 
-  // Found by this test (reviewer suspected it): cover fields use wrap={false},
-  // so a field taller than a page is clipped and the rest is silently lost
-  // (output stops at "Modification 86"). Flip to `it` once fixed.
-  it.fails("keeps all of a very long Modifications section [known bug]", async () => {
+  // Regression: cover fields used wrap={false}, so a field taller than a page
+  // was clipped and the rest silently lost (output stopped at "Modification 86").
+  it("wraps a long email address inside its party cell at a natural break, without hyphens", async () => {
+    const email = "jennifer.mcallister-thompson@lawfirm-example.com";
+    const doc = makeNda({ party1: { company: "Acme", name: "", title: "", noticeAddress: email } });
+    const text = (await pdfPages(doc)).join(" ");
+    // Every character is still there, in order, with nothing inserted except wrapping.
+    expect(squash(text)).toContain(email);
+    expect(text).not.toContain(email); // it was wrapped onto more than one line
+  });
+
+  it("keeps all of a very long Modifications section", async () => {
     const long = Array.from({ length: 200 }, (_, i) => `Modification ${i + 1}: the parties agree to an additional term.`).join(" ");
     const pages = await pdfPages(makeNda({ modifications: long }));
     expect(pages.length).toBeGreaterThanOrEqual(3);

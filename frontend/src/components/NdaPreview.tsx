@@ -36,7 +36,9 @@ export function NdaPreview({ nda }: { nda: NdaDocument }) {
             <div key={field.label}>
               <dt className="font-bold">{field.label}</dt>
               {field.description && <dd className="font-sans text-xs text-slate-500">{field.description}</dd>}
-              <dd className={field.missing ? "rounded bg-amber-50 px-1 text-amber-700" : undefined}>{field.value}</dd>
+              <dd className={`whitespace-pre-line ${field.missing ? "rounded bg-amber-50 px-1 text-amber-700" : ""}`}>
+                {field.value}
+              </dd>
             </div>
           ))}
         </dl>
@@ -44,7 +46,8 @@ export function NdaPreview({ nda }: { nda: NdaDocument }) {
         <p className="pt-2">{nda.signingStatement}</p>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-slate-400 text-sm">
+          {/* Fixed layout so a long unbroken value (e.g. an email) wraps instead of stretching its column. */}
+          <table className="w-full table-fixed border-collapse border border-slate-400 text-sm">
             <thead>
               <tr>
                 <th className="w-1/4 border border-slate-400 p-2" />
@@ -61,8 +64,8 @@ export function NdaPreview({ nda }: { nda: NdaDocument }) {
                       <span className="block font-sans text-xs font-normal text-slate-500">{row.description}</span>
                     )}
                   </th>
-                  <td className="border border-slate-400 p-2 align-top break-words">{row.party1}</td>
-                  <td className="border border-slate-400 p-2 align-top break-words">{row.party2}</td>
+                  <td className="border border-slate-400 p-2 align-top whitespace-pre-line [overflow-wrap:anywhere]">{row.party1}</td>
+                  <td className="border border-slate-400 p-2 align-top whitespace-pre-line [overflow-wrap:anywhere]">{row.party2}</td>
                 </tr>
               ))}
             </tbody>
