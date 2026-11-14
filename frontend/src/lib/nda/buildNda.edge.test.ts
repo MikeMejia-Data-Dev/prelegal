@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { buildNda, defaultFormData, formatDate, ndaFileName, todayIso, validate } from "./buildNda";
-import type { NdaFormData, StandardTerms } from "./types";
+import type { StandardTerms } from "@/lib/documents/types";
+
+import type { NdaFormData } from "./types";
 
 const TERMS: StandardTerms = { title: "Standard Terms", clauses: [], attribution: [] };
 

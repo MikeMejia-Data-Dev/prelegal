@@ -1,4 +1,4 @@
-import type { Clause, Run, StandardTerms } from "./types";
+import type { Clause, Run, StandardTerms } from "@/lib/documents/types";
 
 // Inline markup used by the Common Paper templates: **bold**,
 // <span class="coverpage_link">Term</span> and [text](url).
@@ -48,9 +48,10 @@ export function parseStandardTerms(markdown: string): StandardTerms {
     const clause = line.match(CLAUSE);
     if (clause) {
       clauses.push({
-        number: Number(clause[1]),
-        title: clause[2].trim(),
+        label: `${clause[1]}.`,
+        title: `${clause[2].trim()}.`,
         body: parseInline(clause[3]),
+        depth: 0,
       });
       continue;
     }

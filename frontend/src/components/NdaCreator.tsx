@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { buildNda, defaultFormData, ndaFileName, todayIso, validate } from "@/lib/nda/buildNda";
-import { downloadNda, type DownloadFormat } from "@/lib/nda/export/download";
-import { unsupportedPdfCharactersInForm } from "@/lib/nda/export/pdfText";
-import type { NdaFormData, StandardTerms } from "@/lib/nda/types";
+import { downloadDocument, type DownloadFormat } from "@/lib/export/download";
+import { unsupportedPdfCharactersInForm } from "@/lib/export/pdfText";
+import type { StandardTerms } from "@/lib/documents/types";
+import type { NdaFormData } from "@/lib/nda/types";
 
 import { NdaChat } from "./NdaChat";
-import { NdaPreview } from "./NdaPreview";
+import { DocumentPreview } from "./DocumentPreview";
 
 const FORMATS: { format: DownloadFormat; label: string }[] = [
   { format: "pdf", label: "Download PDF" },
@@ -40,7 +41,7 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
     setBusy(format);
     setDownloadError(null);
     try {
-      await downloadNda(nda, format, ndaFileName(form, format));
+      await downloadDocument(nda, format, ndaFileName(form, format));
     } catch (error) {
       console.error(error);
       setDownloadError("Something went wrong while generating the document. Please try again.");
@@ -89,7 +90,7 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
           )}
         </div>
 
-        <NdaPreview nda={nda} />
+        <DocumentPreview nda={nda} />
       </div>
     </div>
   );

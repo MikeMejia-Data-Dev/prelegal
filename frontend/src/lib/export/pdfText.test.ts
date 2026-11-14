@@ -3,7 +3,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 
-import { defaultFormData } from "../buildNda";
+import { defaultFormData } from "@/lib/nda/buildNda";
 import { PDF_CHARSET_RANGES } from "./pdfCharset";
 import { breakLongTokens, unsupportedPdfCharacters, unsupportedPdfCharactersInForm } from "./pdfText";
 

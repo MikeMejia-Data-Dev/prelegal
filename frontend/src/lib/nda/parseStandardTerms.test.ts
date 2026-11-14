@@ -36,9 +36,10 @@ describe("parseStandardTerms (templates/Mutual-NDA.md)", () => {
 
   it("reads the title and all 11 numbered clauses in order", () => {
     expect(terms.title).toBe("Standard Terms");
-    expect(terms.clauses.map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-    expect(terms.clauses[0].title).toBe("Introduction");
-    expect(terms.clauses[8].title).toBe("Governing Law and Jurisdiction");
+    expect(terms.clauses.map((c) => c.label)).toEqual(["1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "9.", "10.", "11."]);
+    expect(terms.clauses.every((c) => c.depth === 0)).toBe(true);
+    expect(terms.clauses[0].title).toBe("Introduction.");
+    expect(terms.clauses[8].title).toBe("Governing Law and Jurisdiction.");
   });
 
   it("leaves no raw markup in clause text", () => {

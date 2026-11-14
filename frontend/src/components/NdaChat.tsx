@@ -18,6 +18,7 @@ export function NdaChat({ fields, onFieldsChange }: { fields: NdaFormData; onFie
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLOListElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const list = listRef.current;
@@ -42,6 +43,7 @@ export function NdaChat({ fields, onFieldsChange }: { fields: NdaFormData; onFie
       setError("The assistant couldn't respond. Please try again.");
     } finally {
       setBusy(false);
+      inputRef.current?.focus();
     }
   }
 
@@ -75,6 +77,7 @@ export function NdaChat({ fields, onFieldsChange }: { fields: NdaFormData; onFie
       )}
       <form onSubmit={send} className="flex gap-2 border-t border-slate-200 p-3">
         <input
+          ref={inputRef}
           aria-label="Message"
           value={input}
           onChange={(e) => setInput(e.target.value)}

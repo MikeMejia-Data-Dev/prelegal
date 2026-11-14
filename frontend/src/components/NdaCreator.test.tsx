@@ -12,8 +12,8 @@ import type { ChatMessage } from "@/lib/nda/chatApi";
 import { parseStandardTerms } from "@/lib/nda/parseStandardTerms";
 import type { NdaFormData } from "@/lib/nda/types";
 
-const downloadNda = vi.fn();
-vi.mock("@/lib/nda/export/download", () => ({ downloadNda: (...args: unknown[]) => downloadNda(...args) }));
+const downloadDocument = vi.fn();
+vi.mock("@/lib/export/download", () => ({ downloadDocument: (...args: unknown[]) => downloadDocument(...args) }));
 const sendChat = vi.fn();
 vi.mock("@/lib/nda/chatApi", () => ({ sendChat: (...args: unknown[]) => sendChat(...args) }));
 
@@ -54,8 +54,8 @@ const fillRequired = (user: User) =>
   }));
 
 beforeEach(() => {
-  downloadNda.mockReset();
-  downloadNda.mockResolvedValue(undefined);
+  downloadDocument.mockReset();
+  downloadDocument.mockResolvedValue(undefined);
   sendChat.mockReset();
 });
 afterEach(cleanup);
@@ -121,6 +121,24 @@ describe("NdaCreator", () => {
     expect(coverValue("Term of Confidentiality")).toHaveTextContent("In perpetuity.");
   });
 
+  it("returns focus to the message box after the assistant answers", async () => {
+    const user = userEvent.setup();
+    render(<NdaCreator standardTerms={terms} />);
+    await say(user, "Delaware law", (f) => ({ ...f, governingLaw: "Delaware" }));
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveFocus();
+  });
+
+  it("returns focus to the message box after an error", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    sendChat.mockRejectedValueOnce(new Error("down"));
+    const user = userEvent.setup();
+    render(<NdaCreator standardTerms={terms} />);
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "hello");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByRole("alert");
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveFocus();
+  });
+
   it("disables Send while waiting and for empty messages", async () => {
     let answer!: (r: unknown) => void;
     sendChat.mockReturnValue(new Promise((r) => (answer = r)));
@@ -165,8 +183,8 @@ describe("NdaCreator", () => {
     render(<NdaCreator standardTerms={terms} />);
     await fillRequired(user);
     await user.click(pdfButton());
-    expect(downloadNda).toHaveBeenCalledTimes(1);
-    const [nda, format, fileName] = downloadNda.mock.calls[0];
+    expect(downloadDocument).toHaveBeenCalledTimes(1);
+    const [nda, format, fileName] = downloadDocument.mock.calls[0];
     expect(format).toBe("pdf");
     expect(fileName).toBe("Mutual-NDA-Acme-Inc-Globex.pdf");
     expect(nda.coverFields.find((f: { label: string }) => f.label === "Governing Law").value).toBe("Delaware");
@@ -178,12 +196,12 @@ describe("NdaCreator", () => {
     render(<NdaCreator standardTerms={terms} />);
     await fillRequired(user);
     await user.click(wordButton());
-    expect(downloadNda.mock.calls[0].slice(1)).toEqual(["docx", "Mutual-NDA-Acme-Inc-Globex.docx"]);
+    expect(downloadDocument.mock.calls[0].slice(1)).toEqual(["docx", "Mutual-NDA-Acme-Inc-Globex.docx"]);
   });
 
   it("shows a busy state and blocks double downloads while generating", async () => {
     let finish!: () => void;
-    downloadNda.mockReturnValue(new Promise<void>((r) => (finish = r)));
+    downloadDocument.mockReturnValue(new Promise<void>((r) => (finish = r)));
     const user = userEvent.setup();
     render(<NdaCreator standardTerms={terms} />);
     await fillRequired(user);
@@ -192,11 +210,11 @@ describe("NdaCreator", () => {
     expect(screen.getByRole("button", { name: "Download Word" })).toBeDisabled();
     finish();
     await waitFor(() => expect(screen.getByRole("button", { name: "Download PDF" })).toBeEnabled());
-    expect(downloadNda).toHaveBeenCalledTimes(1);
+    expect(downloadDocument).toHaveBeenCalledTimes(1);
   });
 
   it("shows an error and re-enables downloads if generation fails", async () => {
-    downloadNda.mockRejectedValue(new Error("boom"));
+    downloadDocument.mockRejectedValue(new Error("boom"));
     vi.spyOn(console, "error").mockImplementation(() => {});
     const user = userEvent.setup();
     render(<NdaCreator standardTerms={terms} />);

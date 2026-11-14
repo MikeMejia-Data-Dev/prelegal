@@ -1,4 +1,4 @@
-import type { NdaDocument, Run } from "@/lib/nda/types";
+import type { LegalDocument, Run } from "@/lib/documents/types";
 
 function Runs({ runs }: { runs: Run[] }) {
   return runs.map((run, i) => {
@@ -21,12 +21,12 @@ function Runs({ runs }: { runs: Run[] }) {
 }
 
 /** Paper-style rendering of the completed NDA. */
-export function NdaPreview({ nda }: { nda: NdaDocument }) {
+export function DocumentPreview({ nda }: { nda: LegalDocument }) {
   return (
     <article className="mx-auto max-w-[8.5in] space-y-10 bg-white px-6 py-10 font-serif text-[15px] leading-relaxed text-slate-900 shadow-lg ring-1 ring-slate-200 sm:px-14">
       <section aria-label="Cover Page" className="space-y-4">
         <h2 className="text-center text-2xl font-bold">{nda.title}</h2>
-        <h3 className="pt-2 text-sm font-bold uppercase tracking-wide">Using this Mutual Non-Disclosure Agreement</h3>
+        <h3 className="pt-2 text-sm font-bold uppercase tracking-wide">{nda.introHeading}</h3>
         <p className="text-justify">
           <Runs runs={nda.intro} />
         </p>
@@ -51,8 +51,11 @@ export function NdaPreview({ nda }: { nda: NdaDocument }) {
             <thead>
               <tr>
                 <th className="w-1/4 border border-slate-400 p-2" />
-                <th className="border border-slate-400 p-2">PARTY 1</th>
-                <th className="border border-slate-400 p-2">PARTY 2</th>
+                {nda.partyLabels.map((label) => (
+                  <th key={label} className="border border-slate-400 p-2">
+                    {label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -82,10 +85,10 @@ export function NdaPreview({ nda }: { nda: NdaDocument }) {
       <section aria-label="Standard Terms" className="space-y-4">
         <h2 className="text-center text-2xl font-bold">{nda.standardTerms.title}</h2>
         <ol className="space-y-3">
-          {nda.standardTerms.clauses.map((clause) => (
-            <li key={clause.number} className="text-justify">
+          {nda.standardTerms.clauses.map((clause, i) => (
+            <li key={i} className="text-justify" style={{ marginLeft: `${clause.depth * 1.5}rem` }}>
               <strong>
-                {clause.number}. {clause.title}.
+                {clause.label} {clause.title}
               </strong>{" "}
               <Runs runs={clause.body} />
             </li>

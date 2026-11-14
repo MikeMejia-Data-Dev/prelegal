@@ -1,4 +1,4 @@
-import type { NdaDocument } from "../types";
+import type { LegalDocument } from "@/lib/documents/types";
 
 export type DownloadFormat = "pdf" | "docx";
 
@@ -18,15 +18,15 @@ function saveBlob(blob: Blob, fileName: string) {
  * Generate the NDA in the browser and save it. The PDF and DOCX libraries
  * are loaded on demand so they stay out of the initial page bundle.
  */
-export async function downloadNda(nda: NdaDocument, format: DownloadFormat, fileName: string) {
+export async function downloadDocument(nda: LegalDocument, format: DownloadFormat, fileName: string) {
   if (format === "pdf") {
-    const [{ pdf }, { NdaPdf }] = await Promise.all([
+    const [{ pdf }, { DocumentPdf }] = await Promise.all([
       import("@react-pdf/renderer"),
-      import("./NdaPdf"),
+      import("./DocumentPdf"),
     ]);
-    saveBlob(await pdf(<NdaPdf nda={nda} />).toBlob(), fileName);
+    saveBlob(await pdf(<DocumentPdf nda={nda} />).toBlob(), fileName);
   } else {
-    const { ndaToDocxBlob } = await import("./ndaDocx");
-    saveBlob(await ndaToDocxBlob(nda), fileName);
+    const { documentToDocxBlob } = await import("./documentDocx");
+    saveBlob(await documentToDocxBlob(nda), fileName);
   }
 }

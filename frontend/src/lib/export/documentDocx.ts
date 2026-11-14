@@ -15,7 +15,7 @@ import {
   type ParagraphChild,
 } from "docx";
 
-import type { NdaDocument, Run } from "../types";
+import type { LegalDocument, Run } from "@/lib/documents/types";
 
 const FONT = "Calibri";
 const GRAY = "6B7280";
@@ -49,12 +49,12 @@ function cell(children: Paragraph[], widthPct: number): TableCell {
   return new TableCell({ children, borders, width: { size: widthPct, type: WidthType.PERCENTAGE } });
 }
 
-function partyTable(nda: NdaDocument): Table {
+function partyTable(nda: LegalDocument): Table {
   const header = new TableRow({
     tableHeader: true,
     children: [
       cell([new Paragraph("")], 26),
-      ...["PARTY 1", "PARTY 2"].map((label) =>
+      ...nda.partyLabels.map((label) =>
         cell(
           [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: label, bold: true })] })],
           37,
@@ -88,10 +88,10 @@ function partyTable(nda: NdaDocument): Table {
 }
 
 /** Build the completed NDA as a Word document. */
-export async function ndaToDocxBlob(nda: NdaDocument): Promise<Blob> {
+export async function documentToDocxBlob(nda: LegalDocument): Promise<Blob> {
   const coverPage: (Paragraph | Table)[] = [
     new Paragraph({ text: nda.title, heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "USING THIS MUTUAL NON-DISCLOSURE AGREEMENT", heading: HeadingLevel.HEADING_2 }),
+    new Paragraph({ text: nda.introHeading.toUpperCase(), heading: HeadingLevel.HEADING_2 }),
     new Paragraph({ children: runs(nda.intro), spacing: { after: 160 } }),
     ...nda.coverFields.flatMap((field) => [
       new Paragraph({ text: field.label, heading: HeadingLevel.HEADING_3, keepNext: true }),
@@ -116,8 +116,10 @@ export async function ndaToDocxBlob(nda: NdaDocument): Promise<Blob> {
         new Paragraph({
           alignment: AlignmentType.JUSTIFIED,
           spacing: { after: 160 },
+          // Indent in twips (1/20 pt): a quarter inch per nesting level.
+          indent: { left: clause.depth * 360 },
           children: [
-            new TextRun({ text: `${clause.number}. ${clause.title}. `, bold: true }),
+            new TextRun({ text: `${clause.label} ${clause.title} `, bold: true }),
             ...runs(clause.body),
           ],
         }),

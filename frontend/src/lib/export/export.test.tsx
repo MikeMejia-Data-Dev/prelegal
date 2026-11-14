@@ -3,13 +3,13 @@ import path from "node:path";
 import { pdf } from "@react-pdf/renderer";
 import { describe, expect, it } from "vitest";
 
-import { buildNda, defaultFormData } from "../buildNda";
-import { parseStandardTerms } from "../parseStandardTerms";
-import { NdaPdf } from "./NdaPdf";
-import { ndaToDocxBlob } from "./ndaDocx";
+import { buildNda, defaultFormData } from "@/lib/nda/buildNda";
+import { parseStandardTerms } from "@/lib/nda/parseStandardTerms";
+import { DocumentPdf } from "./DocumentPdf";
+import { documentToDocxBlob } from "./documentDocx";
 
 const terms = parseStandardTerms(
-  readFileSync(path.resolve(__dirname, "../../../../../templates/Mutual-NDA.md"), "utf8"),
+  readFileSync(path.resolve(__dirname, "../../../../templates/Mutual-NDA.md"), "utf8"),
 );
 
 const nda = buildNda(
@@ -28,14 +28,14 @@ const header = async (blob: Blob, length: number) =>
 
 describe("document exports", () => {
   it("renders a multi-page PDF", async () => {
-    const blob = await pdf(<NdaPdf nda={nda} />).toBlob();
+    const blob = await pdf(<DocumentPdf nda={nda} />).toBlob();
     expect(await header(blob, 5)).toBe("%PDF-");
     const pages = Buffer.from(await blob.arrayBuffer()).toString("latin1").match(/\/Type \/Page\b/g) ?? [];
     expect(pages.length).toBeGreaterThanOrEqual(2);
   });
 
   it("renders a DOCX (zip) document", async () => {
-    const blob = await ndaToDocxBlob(nda);
+    const blob = await documentToDocxBlob(nda);
     expect(await header(blob, 2)).toBe("PK");
     expect(blob.size).toBeGreaterThan(5000);
   });

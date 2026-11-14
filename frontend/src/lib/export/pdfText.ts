@@ -1,4 +1,4 @@
-import type { NdaFormData } from "../types";
+import type { NdaFormData } from "@/lib/nda/types";
 import { PDF_CHARSET_RANGES } from "./pdfCharset";
 
 const RANGES: [number, number][] = PDF_CHARSET_RANGES.split(";").map((r) => {

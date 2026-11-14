@@ -1,7 +1,7 @@
 import { Document, Font, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { ComponentProps, ReactNode } from "react";
 
-import type { NdaDocument, Run } from "../types";
+import type { LegalDocument, Run } from "@/lib/documents/types";
 import { breakLongTokens } from "./pdfText";
 
 /**
@@ -92,14 +92,14 @@ function Runs({ runs }: { runs: Run[] }) {
   });
 }
 
-export function NdaPdf({ nda }: { nda: NdaDocument }) {
+export function DocumentPdf({ nda }: { nda: LegalDocument }) {
   const lastRow = nda.partyRows.length - 1;
 
   return (
     <Document title={nda.title} creator="Prelegal" producer="Prelegal">
       <Page size="LETTER" style={styles.page}>
         <P style={styles.title}>{nda.title}</P>
-        <P style={styles.heading}>USING THIS MUTUAL NON-DISCLOSURE AGREEMENT</P>
+        <P style={styles.heading}>{nda.introHeading.toUpperCase()}</P>
         <P style={styles.paragraph}>
           <Runs runs={nda.intro} />
         </P>
@@ -124,8 +124,8 @@ export function NdaPdf({ nda }: { nda: NdaDocument }) {
           <View style={styles.table}>
             <View style={styles.row}>
               <Text style={styles.labelCell} />
-              <P style={[styles.partyCell, styles.partyCellDivider, styles.headCell]}>PARTY 1</P>
-              <P style={[styles.partyCell, styles.headCell]}>PARTY 2</P>
+              <P style={[styles.partyCell, styles.partyCellDivider, styles.headCell]}>{nda.partyLabels[0]}</P>
+              <P style={[styles.partyCell, styles.headCell]}>{nda.partyLabels[1]}</P>
             </View>
             {nda.partyRows.map((row, i) => (
               <View
@@ -151,10 +151,10 @@ export function NdaPdf({ nda }: { nda: NdaDocument }) {
 
       <Page size="LETTER" style={styles.page}>
         <P style={styles.title}>{nda.standardTerms.title}</P>
-        {nda.standardTerms.clauses.map((clause) => (
-          <P key={clause.number} style={styles.paragraph}>
+        {nda.standardTerms.clauses.map((clause, i) => (
+          <P key={i} style={[styles.paragraph, { marginLeft: clause.depth * 16 }]}>
             <Text style={styles.bold}>
-              {clause.number}. {clause.title}.
+              {clause.label} {clause.title}
             </Text>{" "}
             <Runs runs={clause.body} />
           </P>

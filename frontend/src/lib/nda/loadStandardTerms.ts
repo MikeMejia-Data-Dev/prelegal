@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { parseStandardTerms } from "./parseStandardTerms";
-import type { StandardTerms } from "./types";
+import type { StandardTerms } from "@/lib/documents/types";
 
 /**
  * Location of the Standard Terms in the PL-1 templates dataset at the

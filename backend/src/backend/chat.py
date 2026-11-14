@@ -23,7 +23,9 @@ Each turn you receive the current fields. Return `fields` with every field, keep
 unless the user changes them. Record every value the user gives, even several in one message. \
 If the user names the two companies without saying which is which, the first is party1 and the \
 second is party2. Never invent values. \
-In `reply`, briefly confirm what you recorded and ask about one or two missing fields at a time. \
+In `reply`, briefly confirm what you recorded. While any required field is missing, always end \
+`reply` with a direct follow-up question (ending in "?") about one or two missing fields; never just \
+instruct the user to provide them. \
 Required before download: governing law, jurisdiction, both company names, and positive whole years \
 for any term that expires. When everything required is filled in, tell the user they can download \
 the agreement and offer to adjust anything."""

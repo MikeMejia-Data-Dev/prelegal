@@ -9,17 +9,18 @@ import JSZip from "jszip";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { describe, expect, it } from "vitest";
 
-import { buildNda, defaultFormData } from "../buildNda";
-import { parseStandardTerms } from "../parseStandardTerms";
-import type { NdaDocument, NdaFormData } from "../types";
-import { NdaPdf } from "./NdaPdf";
-import { ndaToDocxBlob } from "./ndaDocx";
+import { buildNda, defaultFormData } from "@/lib/nda/buildNda";
+import { parseStandardTerms } from "@/lib/nda/parseStandardTerms";
+import type { LegalDocument } from "@/lib/documents/types";
+import type { NdaFormData } from "@/lib/nda/types";
+import { DocumentPdf } from "./DocumentPdf";
+import { documentToDocxBlob } from "./documentDocx";
 
 const terms = parseStandardTerms(
-  readFileSync(path.resolve(__dirname, "../../../../../templates/Mutual-NDA.md"), "utf8"),
+  readFileSync(path.resolve(__dirname, "../../../../templates/Mutual-NDA.md"), "utf8"),
 );
 
-function makeNda(overrides: Partial<NdaFormData> = {}): NdaDocument {
+function makeNda(overrides: Partial<NdaFormData> = {}): LegalDocument {
   return buildNda(
     {
       ...defaultFormData(new Date(2026, 10, 12)),
@@ -36,8 +37,8 @@ function makeNda(overrides: Partial<NdaFormData> = {}): NdaDocument {
 const squash = (s: string) => s.replace(/\s+/g, "");
 
 /** Visible text of a DOCX, with <w:br/> and paragraph ends shown as "\n". */
-async function docxText(nda: NdaDocument): Promise<string> {
-  const zip = await JSZip.loadAsync(await (await ndaToDocxBlob(nda)).arrayBuffer());
+async function docxText(nda: LegalDocument): Promise<string> {
+  const zip = await JSZip.loadAsync(await (await documentToDocxBlob(nda)).arrayBuffer());
   const xml = await zip.file("word/document.xml")!.async("string");
   return xml
     .replace(/<w:br\/>/g, "\n")
@@ -51,14 +52,14 @@ async function docxText(nda: NdaDocument): Promise<string> {
     .replace(/&apos;/g, "'");
 }
 
-async function docxXml(nda: NdaDocument, file = "word/document.xml"): Promise<string> {
-  const zip = await JSZip.loadAsync(await (await ndaToDocxBlob(nda)).arrayBuffer());
+async function docxXml(nda: LegalDocument, file = "word/document.xml"): Promise<string> {
+  const zip = await JSZip.loadAsync(await (await documentToDocxBlob(nda)).arrayBuffer());
   return zip.file(file)!.async("string");
 }
 
 /** Text of each PDF page, as extracted by pdf.js. */
-async function pdfPages(nda: NdaDocument): Promise<string[]> {
-  const blob = await pdf(<NdaPdf nda={nda} />).toBlob();
+async function pdfPages(nda: LegalDocument): Promise<string[]> {
+  const blob = await pdf(<DocumentPdf nda={nda} />).toBlob();
   const doc = await getDocument({ data: new Uint8Array(await blob.arrayBuffer()), useSystemFonts: false })
     .promise;
   const pages: string[] = [];
@@ -90,7 +91,7 @@ describe("DOCX content", () => {
   it("contains all 11 Standard Terms clauses in full", async () => {
     const text = squash(await docxText(nda));
     for (const clause of terms.clauses) {
-      expect(text).toContain(squash(`${clause.number}. ${clause.title}. ${clause.body.map((r) => r.text).join("")}`));
+      expect(text).toContain(squash(`${clause.label} ${clause.title} ${clause.body.map((r) => r.text).join("")}`));
     }
   });
 
@@ -151,7 +152,7 @@ describe("PDF content", () => {
 
   it("contains every Standard Terms clause heading", async () => {
     const text = squash((await pdfPages(nda)).join(" "));
-    for (const clause of terms.clauses) expect(text).toContain(squash(`${clause.number}. ${clause.title}.`));
+    for (const clause of terms.clauses) expect(text).toContain(squash(`${clause.label} ${clause.title}`));
   });
 
   // Regression: react-pdf inserted a hyphen where a line broke between a bold
@@ -160,7 +161,7 @@ describe("PDF content", () => {
   it("contains all 11 Standard Terms clauses verbatim, with no inserted hyphens", async () => {
     const text = squash((await pdfPages(nda)).join(" "));
     for (const clause of terms.clauses) {
-      expect(text).toContain(squash(`${clause.title}. ${clause.body.map((r) => r.text).join("")}`));
+      expect(text).toContain(squash(`${clause.title} ${clause.body.map((r) => r.text).join("")}`));
     }
   });
 

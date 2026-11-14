@@ -1,10 +1,6 @@
-import type {
-  CoverField,
-  NdaDocument,
-  NdaFormData,
-  Party,
-  StandardTerms,
-} from "./types";
+import type { CoverField, LegalDocument, StandardTerms } from "@/lib/documents/types";
+
+import type { NdaFormData, Party } from "./types";
 
 export const STANDARD_TERMS_URL = "https://commonpaper.com/standards/mutual-nda/1.0";
 export const LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/";
@@ -102,11 +98,12 @@ function confidentialityTermText(form: NdaFormData): string {
  * attach the Standard Terms. Missing required values become bracketed
  * placeholders so the preview always renders.
  */
-export function buildNda(form: NdaFormData, standardTerms: StandardTerms): NdaDocument {
+export function buildNda(form: NdaFormData, standardTerms: StandardTerms): LegalDocument {
   const { party1, party2 } = form;
 
   return {
     title: "Mutual Non-Disclosure Agreement",
+    introHeading: "Using this Mutual Non-Disclosure Agreement",
     intro: [
       { text: "This Mutual Non-Disclosure Agreement (the “MNDA”) consists of: (1) this Cover Page (“" },
       { text: "Cover Page", bold: true },
@@ -137,6 +134,7 @@ export function buildNda(form: NdaFormData, standardTerms: StandardTerms): NdaDo
     ],
     signingStatement:
       "By signing this Cover Page, each party agrees to enter into this MNDA as of the Effective Date.",
+    partyLabels: ["PARTY 1", "PARTY 2"],
     partyRows: [
       { label: "Signature", party1: "", party2: "", handwritten: true },
       { label: "Print Name", party1: party1.name.trim(), party2: party2.name.trim() },
