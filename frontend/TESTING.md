@@ -6,6 +6,7 @@
 | --- | --- |
 | `npm test` | Vitest unit and component tests (node + jsdom), ~2s |
 | `npm run test:e2e` | Playwright end-to-end tests against `next dev` in the locally installed Google Chrome (desktop and Pixel 7 viewports) |
+| `E2E_LIVE=1 E2E_BASE_URL=http://localhost:8000 npx playwright test live-chat` | Real AI conversation against the running container |
 | `npx tsc --noEmit` / `npm run lint` | Type check and lint |
 
 ### Coverage at a glance
@@ -14,8 +15,10 @@
 - **`parseStandardTerms.test.ts`, `templateFidelity.test.ts`**: every clause of `templates/Mutual-NDA.md` is reproduced word for word; no words lost; typographic quotes kept; CRLF input; Cover Page labels and signing statement match `Mutual-NDA-coverpage.md`.
 - **`export/export.test.tsx`, `export/exportContent.test.tsx`**: opens the generated DOCX (`word/document.xml`) and extracts PDF text with pdf.js to check the cover values, party table, all clauses, hyperlinks and XML escaping are actually in the files.
 - **`export/download.test.tsx`**: blob MIME types, download file name, temporary link cleanup, object URL revocation.
-- **`components/NdaCreator.test.tsx`**: live preview, required-field gating of downloads, busy state / double-click protection, error handling, term radio toggles, HTML escaping, accessible names.
-- **`e2e/nda.spec.ts`**: real page load with no console errors (hydration), real PDF and Word downloads, responsive layout, keyboard focus order.
+- **`components/NdaCreator.test.tsx`**: chat with a mocked `/api/chat` (history and fields sent each turn, reply shown, waiting state, error handling), live preview, required-field gating of downloads, busy state / double-click protection, HTML escaping.
+- **`e2e/nda.spec.ts`**: real page load with no console errors (hydration), chat driven through a mocked `/api/chat`, real PDF and Word downloads, responsive layout, keyboard use.
+- **`e2e/live-chat.spec.ts`**: opt-in conversation with the real AI.
+- **`backend/tests/test_chat.py`**: prompt assembly, Structured Outputs call, `/api/chat` validation, and one live OpenAI test (skipped without `OPENAI_API_KEY`).
 
 ### Regression tests for fixed bugs
 
@@ -37,13 +40,13 @@ Run `npm run dev` and open http://localhost:3000/nda/ (or start the container an
 | # | Steps | Expected |
 | --- | --- | --- |
 | M1 | Load the page | Effective Date is today; both download buttons disabled; list of 4 missing fields shown |
-| M2 | Fill Governing Law, Jurisdiction, both Company fields | Buttons enable; missing-fields list disappears; preview shows values without amber highlights |
-| M3 | Toggle MNDA Term to "Continues until terminated", then back | Year input disables, then re-enables with the previous number kept |
-| M4 | Clear a year input | Placeholder `[MNDA Term]` in preview; downloads disabled with a clear message |
+| M2 | Tell the chat both company names, governing law and jurisdiction | AI confirms and asks about missing details; buttons enable; preview shows values without amber highlights |
+| M3 | Ask the chat to make the MNDA continue until terminated, then go back to 2 years | Preview MNDA Term follows each change |
+| M4 | Ask the chat to change something it already recorded (e.g. the jurisdiction) | Only that value changes in the preview |
 | M5 | Download PDF | File `Mutual-NDA-<Party1>-<Party2>.pdf`; cover page on page 1; Standard Terms on following pages; links clickable; no hyphenation in legal text |
 | M6 | Download Word | Opens without repair prompt; headings, party table and links intact |
-| M7 | Enter a 2-line Modifications | Both lines on separate lines in preview, PDF and Word |
-| M8 | Enter accented and non-Latin names (`Société Générale`, `Łódź`, `Жуков`, `山田`) | Rendered correctly in preview, PDF and Word |
+| M7 | Ask for two numbered Modifications | Both lines on separate lines in preview, PDF and Word |
+| M8 | Give accented and non-Latin names (`Société Générale`, `Łódź`, `Жуков`, `山田`) | Rendered correctly in preview, PDF and Word |
 | M9 | Enter a long unbroken notice address (60+ chars) | Wraps inside its cell in preview, PDF and Word; table columns keep their proportions |
 | M10 | Paste ~200 lines into Modifications | Nothing is cut off in the PDF |
 | M11 | Resize to phone width (390px) | No horizontal scroll; form above preview |

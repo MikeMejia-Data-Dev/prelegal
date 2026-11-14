@@ -7,11 +7,15 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { todayIso } from "@/lib/nda/buildNda";
+import { formatDate, todayIso } from "@/lib/nda/buildNda";
+import type { ChatMessage } from "@/lib/nda/chatApi";
 import { parseStandardTerms } from "@/lib/nda/parseStandardTerms";
+import type { NdaFormData } from "@/lib/nda/types";
 
 const downloadNda = vi.fn();
 vi.mock("@/lib/nda/export/download", () => ({ downloadNda: (...args: unknown[]) => downloadNda(...args) }));
+const sendChat = vi.fn();
+vi.mock("@/lib/nda/chatApi", () => ({ sendChat: (...args: unknown[]) => sendChat(...args) }));
 
 import { NdaCreator } from "./NdaCreator";
 
@@ -28,29 +32,47 @@ const coverValue = (label: string) => {
 const pdfButton = () => screen.getByRole("button", { name: /Download PDF|Preparing/ });
 const wordButton = () => screen.getByRole("button", { name: /Download Word|Preparing/ });
 
-/** The party sections are fieldsets with a legend, which RTL exposes as groups. */
-const party = (n: 1 | 2) => within(screen.getByRole("group", { name: `Party ${n}` }));
+type User = ReturnType<typeof userEvent.setup>;
+let replyCount = 0;
 
-async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByRole("textbox", { name: /^Governing Law/ }), "Delaware");
-  await user.type(screen.getByRole("textbox", { name: /^Jurisdiction/ }), "New Castle, DE");
-  await user.type(party(1).getByRole("textbox", { name: /^Company/ }), "Acme, Inc.");
-  await user.type(party(2).getByRole("textbox", { name: /^Company/ }), "Globex");
+/** Send a chat message; the mocked AI applies `update` to the current fields. */
+async function say(user: User, text: string, update: (f: NdaFormData) => NdaFormData) {
+  const reply = `Reply ${++replyCount}`;
+  sendChat.mockImplementationOnce(async (_m: ChatMessage[], f: NdaFormData) => ({ reply, fields: update(f) }));
+  await user.type(screen.getByRole("textbox", { name: "Message" }), text);
+  await user.click(screen.getByRole("button", { name: "Send" }));
+  await screen.findByText(reply);
 }
+
+const fillRequired = (user: User) =>
+  say(user, "Acme and Globex, Delaware law", (f) => ({
+    ...f,
+    governingLaw: "Delaware",
+    jurisdiction: "New Castle, DE",
+    party1: { ...f.party1, company: "Acme, Inc." },
+    party2: { ...f.party2, company: "Globex" },
+  }));
 
 beforeEach(() => {
   downloadNda.mockReset();
   downloadNda.mockResolvedValue(undefined);
+  sendChat.mockReset();
 });
 afterEach(cleanup);
 
 describe("NdaCreator", () => {
   it("sets the effective date to today after mount", async () => {
     render(<NdaCreator standardTerms={terms} />);
-    await waitFor(() => expect(screen.getByLabelText(/^Effective Date/)).toHaveValue(todayIso()));
+    await waitFor(() => expect(coverValue("Effective Date")).toHaveTextContent(formatDate(todayIso())));
   });
 
-  it("starts with downloads disabled and lists the missing fields", async () => {
+  it("opens the chat with a greeting from the assistant", () => {
+    render(<NdaCreator standardTerms={terms} />);
+    const conversation = screen.getByRole("log", { name: "Conversation" });
+    expect(conversation).toHaveTextContent(/draft a Mutual NDA/);
+  });
+
+  it("starts with downloads disabled and lists the missing fields", () => {
     render(<NdaCreator standardTerms={terms} />);
     expect(pdfButton()).toBeDisabled();
     expect(wordButton()).toBeDisabled();
@@ -67,13 +89,66 @@ describe("NdaCreator", () => {
     expect(coverValue("Jurisdiction")).toHaveTextContent("[Jurisdiction]");
   });
 
-  it("updates the preview live as the user types", async () => {
+  it("sends the history and current fields, then shows the reply and updates the preview", async () => {
     const user = userEvent.setup();
     render(<NdaCreator standardTerms={terms} />);
-    await user.type(screen.getByRole("textbox", { name: /^Governing Law/ }), "Delaware");
+    await waitFor(() => expect(coverValue("Effective Date")).toHaveTextContent(formatDate(todayIso())));
+    await say(user, "Delaware law, signer Ada Lovelace", (f) => ({
+      ...f,
+      governingLaw: "Delaware",
+      party1: { ...f.party1, name: "Ada Lovelace" },
+    }));
+
+    const [messages, fields] = sendChat.mock.calls[0];
+    expect(messages.map((m: ChatMessage) => m.role)).toEqual(["assistant", "user"]);
+    expect(messages[1].content).toBe("Delaware law, signer Ada Lovelace");
+    expect(fields.effectiveDate).toBe(todayIso());
+
+    expect(screen.getByRole("log", { name: "Conversation" })).toHaveTextContent("Delaware law, signer Ada Lovelace");
     expect(coverValue("Governing Law")).toHaveTextContent(/^Delaware$/);
-    await user.type(party(1).getByRole("textbox", { name: /^Signer name/ }), "Ada Lovelace");
     expect(within(preview()).getByRole("row", { name: /Print Name/ })).toHaveTextContent("Ada Lovelace");
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue("");
+  });
+
+  it("sends the fields from the previous turn on the next turn", async () => {
+    const user = userEvent.setup();
+    render(<NdaCreator standardTerms={terms} />);
+    await fillRequired(user);
+    await say(user, "Perpetual confidentiality", (f) => ({ ...f, confidentialityTerm: { kind: "perpetual" } }));
+    const [messages, fields] = sendChat.mock.calls[1];
+    expect(messages).toHaveLength(4);
+    expect(fields.governingLaw).toBe("Delaware");
+    expect(coverValue("Term of Confidentiality")).toHaveTextContent("In perpetuity.");
+  });
+
+  it("disables Send while waiting and for empty messages", async () => {
+    let answer!: (r: unknown) => void;
+    sendChat.mockReturnValue(new Promise((r) => (answer = r)));
+    const user = userEvent.setup();
+    render(<NdaCreator standardTerms={terms} />);
+    const sendButton = screen.getByRole("button", { name: "Send" });
+    expect(sendButton).toBeDisabled();
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "hello");
+    await user.click(sendButton);
+    expect(screen.getByText("Thinking…")).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "again");
+    expect(sendButton).toBeDisabled();
+    answer({ reply: "Hi there", fields: sendChat.mock.calls[0][1] });
+    expect(await screen.findByText("Hi there")).toBeInTheDocument();
+    expect(sendChat).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows an error and keeps the fields if the assistant fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const user = userEvent.setup();
+    render(<NdaCreator standardTerms={terms} />);
+    await fillRequired(user);
+    sendChat.mockRejectedValueOnce(new Error("down"));
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "change it");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("The assistant couldn't respond");
+    expect(coverValue("Governing Law")).toHaveTextContent(/^Delaware$/);
+    expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
   });
 
   it("enables downloads once all required fields are filled", async () => {
@@ -131,57 +206,20 @@ describe("NdaCreator", () => {
     expect(wordButton()).toBeEnabled();
   });
 
-  it("disables downloads again when a required field is cleared", async () => {
+  it("disables downloads again when the AI clears a required field", async () => {
     const user = userEvent.setup();
     render(<NdaCreator standardTerms={terms} />);
     await fillRequired(user);
-    await user.clear(screen.getByRole("textbox", { name: /^Jurisdiction/ }));
+    await say(user, "Remove the jurisdiction", (f) => ({ ...f, jurisdiction: "" }));
     expect(pdfButton()).toBeDisabled();
     expect(screen.getByRole("status")).toHaveTextContent("Jurisdiction is required.");
   });
 
-  it("switches MNDA Term between years and until-terminated, remembering the year count", async () => {
-    const user = userEvent.setup();
-    render(<NdaCreator standardTerms={terms} />);
-    const years = screen.getByRole("spinbutton", { name: "MNDA Term in years" });
-    await user.clear(years);
-    await user.type(years, "3");
-    expect(coverValue("MNDA Term")).toHaveTextContent("Expires 3 years from Effective Date.");
-
-    await user.click(screen.getByRole("radio", { name: /Continues until terminated/ }));
-    expect(years).toBeDisabled();
-    expect(coverValue("MNDA Term")).toHaveTextContent(/^Continues until terminated/);
-
-    const radios = within(screen.getByRole("radiogroup", { name: "MNDA Term" })).getAllByRole("radio");
-    await user.click(radios[0]);
-    expect(years).toHaveValue(3);
-    expect(coverValue("MNDA Term")).toHaveTextContent("Expires 3 years from Effective Date.");
-  });
-
-  it("supports perpetual confidentiality", async () => {
-    const user = userEvent.setup();
-    render(<NdaCreator standardTerms={terms} />);
-    await user.click(screen.getByRole("radio", { name: "In perpetuity" }));
-    expect(coverValue("Term of Confidentiality")).toHaveTextContent("In perpetuity.");
-  });
-
-  it("flags an emptied year count instead of crashing", async () => {
-    const user = userEvent.setup();
-    render(<NdaCreator standardTerms={terms} />);
-    await user.clear(screen.getByRole("spinbutton", { name: "Term of Confidentiality in years" }));
-    expect(coverValue("Term of Confidentiality")).toHaveTextContent("[Term of Confidentiality]");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Term of Confidentiality must be a whole number of years between 1 and 99.",
-    );
-  });
-
-  it("renders user input as text, never as HTML", async () => {
+  it("renders user and AI text as text, never as HTML", async () => {
     const user = userEvent.setup();
     const { container } = render(<NdaCreator standardTerms={terms} />);
-    const purpose = screen.getByRole("textbox", { name: /^Purpose/ });
-    await user.clear(purpose);
-    await user.type(purpose, "<img src=x onerror=alert(1)>");
-    expect(coverValue("Purpose")).toHaveTextContent("<img src=x onerror=alert(1)>");
+    await say(user, "<img src=x onerror=alert(1)>", (f) => ({ ...f, purpose: "<img src=y onerror=alert(2)>" }));
+    expect(coverValue("Purpose")).toHaveTextContent("<img src=y onerror=alert(2)>");
     expect(container.querySelector("img")).toBeNull();
   });
 
@@ -189,7 +227,7 @@ describe("NdaCreator", () => {
   it("preserves line breaks in Modifications in the preview", async () => {
     const user = userEvent.setup();
     render(<NdaCreator standardTerms={terms} />);
-    await user.type(screen.getByRole("textbox", { name: /^MNDA Modifications/ }), "1. A.{Enter}2. B.");
+    await say(user, "Two modifications", (f) => ({ ...f, modifications: "1. A.\n2. B." }));
     const dd = coverValue("MNDA Modifications");
     expect(dd.textContent).toBe("1. A.\n2. B.");
     expect(dd.className).toMatch(/whitespace-pre-(line|wrap)/);
@@ -199,13 +237,12 @@ describe("NdaCreator", () => {
     const user = userEvent.setup();
     render(<NdaCreator standardTerms={terms} />);
     await fillRequired(user);
-    await user.type(party(2).getByRole("textbox", { name: /^Signer name/ }), "山田 → ok");
+    await say(user, "Signer 山田", (f) => ({ ...f, party2: { ...f.party2, name: "山田 → ok" } }));
     expect(pdfButton()).toBeDisabled();
     expect(wordButton()).toBeEnabled();
     expect(screen.getByRole("note")).toHaveTextContent("The PDF can't display these characters: 山 田 →");
 
-    await user.clear(party(2).getByRole("textbox", { name: /^Signer name/ }));
-    await user.type(party(2).getByRole("textbox", { name: /^Signer name/ }), "Łódź Жуков Ελένη Nguyễn");
+    await say(user, "Fix the name", (f) => ({ ...f, party2: { ...f.party2, name: "Łódź Жуков Ελένη Nguyễn" } }));
     expect(pdfButton()).toBeEnabled();
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
@@ -215,13 +252,5 @@ describe("NdaCreator", () => {
     const items = within(screen.getByRole("region", { name: "Standard Terms" })).getAllByRole("listitem");
     expect(items).toHaveLength(11);
     expect(items[0]).toHaveTextContent(/^1\. Introduction\./);
-  });
-
-  it("gives every form control an accessible name", () => {
-    render(<NdaCreator standardTerms={terms} />);
-    const form = document.querySelector("form")!;
-    for (const control of form.querySelectorAll("input, textarea")) {
-      expect(control).toHaveAccessibleName();
-    }
   });
 });

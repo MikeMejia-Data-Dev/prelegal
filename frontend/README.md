@@ -1,9 +1,9 @@
 # Prelegal frontend: Mutual NDA Creator
 
 A Next.js app that creates a [Common Paper Mutual NDA](https://commonpaper.com/standards/mutual-nda/1.0).
-The user fills in the cover page terms and both parties' details, sees a live preview of the full
-agreement, and downloads it as **PDF** or **Word (.docx)**. Everything runs in the browser and no data
-is sent to a server.
+The user chats with an AI assistant, which fills in the cover page terms and both parties' details.
+A live preview of the full agreement updates as the chat goes, and the user downloads it as **PDF** or
+**Word (.docx)**. Chat messages go to the backend (`/api/chat`); documents are generated in the browser.
 
 ## Requirements
 
@@ -16,7 +16,7 @@ Run these from `frontend/`:
 | Command         | What it does                              |
 | --------------- | ----------------------------------------- |
 | `npm install`   | Install dependencies                      |
-| `npm run dev`   | Dev server at http://localhost:3000       |
+| `npm run dev`   | Dev server at http://localhost:3000 (proxies `/api` to the backend on :8000) |
 | `npm test`      | Unit and component tests (Vitest)         |
 | `npm run test:e2e` | End-to-end tests in Chrome (Playwright) |
 | `E2E_BASE_URL=http://localhost:8000 npm run test:e2e` | Same tests against the running container |
@@ -35,7 +35,9 @@ See [`TESTING.md`](TESTING.md) for test coverage and the manual test script.
   `../templates/Mutual-NDA.md`, the dataset in the repository root (see `catalog.json`). **Run the
   app from `frontend/` inside the full repository** so that this path resolves.
 - `src/lib/nda/parseStandardTerms.ts` turns the template markdown into numbered clauses.
-- `src/lib/nda/buildNda.ts` combines the form values and the clauses into one `NdaDocument`.
+- `src/components/NdaChat.tsx` sends the conversation and current fields to `/api/chat`
+  (`src/lib/nda/chatApi.ts`) and replaces the fields with the AI's updated values.
+- `src/lib/nda/buildNda.ts` combines the field values and the clauses into one `NdaDocument`.
   The preview (`src/components/NdaPreview.tsx`), the PDF (`src/lib/nda/export/NdaPdf.tsx`,
   `@react-pdf/renderer`) and the Word file (`src/lib/nda/export/ndaDocx.ts`, `docx`) all render
   that same model.
@@ -45,7 +47,7 @@ See [`TESTING.md`](TESTING.md) for test coverage and the manual test script.
 
 - The PDF uses the bundled Noto Sans font (`src/lib/nda/export/fonts`, SIL OFL), which covers Latin,
   Greek and Cyrillic. It has no glyphs for CJK, Arabic, Hebrew, emoji and some symbols such as `→`.
-  If the form contains any of these, the PDF button is disabled with a message listing the
+  If the fields contain any of these, the PDF button is disabled with a message listing the
   characters, and the Word export still works. If you change the fonts, run
   `node scripts/generate-pdf-charset.mjs` to regenerate the supported character list.
 

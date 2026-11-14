@@ -1,7 +1,7 @@
 # prelegal
 
 Prelegal is a platform for drafting common legal agreements. Instead of starting from a blank page or
-paying a lawyer to fill in a standard form, you answer a few questions about your deal and Prelegal
+paying a lawyer to fill in a standard form, you chat with an AI assistant about your deal and Prelegal
 produces a complete, ready-to-sign agreement that you can download as a PDF or Word document.
 
 The agreements are based on [Common Paper](https://commonpaper.com) standard agreements: free,
@@ -24,11 +24,13 @@ This project is currently in progress and is expected to be completed within one
 
 ## What the Mutual NDA creator does
 
-- A form for the Cover Page: purpose, effective date, NDA term, confidentiality term, governing law,
-  jurisdiction, modifications, and each party's signer and notice address.
-- A live preview of the full agreement that updates as you type, with missing required fields highlighted.
+- A freeform AI chat that asks about your deal and fills in the Cover Page: purpose, effective date,
+  NDA term, confidentiality term, governing law, jurisdiction, modifications, and each party's signer
+  and notice address.
+- A live preview of the full agreement that updates as the chat goes, with missing required fields highlighted.
 - Download as PDF or Word (.docx). Both files contain the Standard Terms word for word.
-- Everything runs in the browser. Nothing you enter is sent to a server.
+- Chat messages are sent to the backend, which calls OpenAI (`gpt-4.1-mini`, Structured Outputs) with
+  `OPENAI_API_KEY` from `.env`. Nothing is stored. The PDF and Word files are generated in the browser.
 - A placeholder sign-in screen leads into the app. There is no authentication yet.
 
 ## Repository layout
@@ -38,7 +40,7 @@ This project is currently in progress and is expected to be completed within one
 | `templates/` | The Common Paper agreement templates, in Markdown, copied unmodified |
 | `catalog.json` | A list of the templates with a short description of each |
 | `frontend/` | The web app (Next.js, React, TypeScript, Tailwind), built as static files |
-| `backend/` | FastAPI app (uv project) that serves the API under `/api` and the frontend |
+| `backend/` | FastAPI app (uv project): `/api/chat` (AI), `/api/health`, and the static frontend |
 | `scripts/` | Start and stop scripts for Mac, Linux and Windows (Git Bash) |
 | `Dockerfile` | Builds the frontend and backend into one container |
 

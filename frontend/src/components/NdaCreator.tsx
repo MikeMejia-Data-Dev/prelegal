@@ -7,7 +7,7 @@ import { downloadNda, type DownloadFormat } from "@/lib/nda/export/download";
 import { unsupportedPdfCharactersInForm } from "@/lib/nda/export/pdfText";
 import type { NdaFormData, StandardTerms } from "@/lib/nda/types";
 
-import { NdaForm } from "./NdaForm";
+import { NdaChat } from "./NdaChat";
 import { NdaPreview } from "./NdaPreview";
 
 const FORMATS: { format: DownloadFormat; label: string }[] = [
@@ -15,7 +15,7 @@ const FORMATS: { format: DownloadFormat; label: string }[] = [
   { format: "docx", label: "Download Word" },
 ];
 
-/** Form + live preview + download for the Mutual NDA. */
+/** AI chat + live preview + download for the Mutual NDA. */
 export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) {
   // The page is pre-rendered, so the effective date starts empty and is set
   // to the visitor's local "today" after mount to avoid a hydration mismatch.
@@ -51,7 +51,7 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
-      <NdaForm value={form} onChange={setForm} />
+      <NdaChat fields={form} onFieldsChange={setForm} />
 
       <div className="space-y-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pb-6">
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
