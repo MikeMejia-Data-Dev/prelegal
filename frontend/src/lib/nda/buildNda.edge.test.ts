@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildNda, defaultFormData, formatDate, ndaFileName, todayIso, validate } from "./buildNda";
-import type { NdaFormData, StandardTerms } from "./types";
+import { buildNda, defaultFormData, formatDate, ndaFileName, todayIso, validateNda } from "./buildNda";
+import type { StandardTerms } from "@/lib/documents/types";
+
+import type { NdaFormData } from "./types";
 
 const TERMS: StandardTerms = { title: "Standard Terms", clauses: [], attribution: [] };
 
@@ -60,7 +62,7 @@ describe("formatDate edge cases", () => {
   });
 });
 
-describe("validate edge cases", () => {
+describe("validateNda edge cases", () => {
   it("treats whitespace-only text as missing", () => {
     const form = completeForm({
       purpose: "   ",
@@ -69,7 +71,7 @@ describe("validate edge cases", () => {
       party1: { company: "  ", name: "", title: "", noticeAddress: "" },
       party2: { company: " ", name: "", title: "", noticeAddress: "" },
     });
-    expect(validate(form)).toEqual([
+    expect(validateNda(form)).toEqual([
       "Purpose is required.",
       "Governing Law (state) is required.",
       "Jurisdiction is required.",
@@ -79,7 +81,7 @@ describe("validate edge cases", () => {
   });
 
   it("reports an empty effective date (the pre-hydration state)", () => {
-    expect(validate(completeForm({ effectiveDate: "" }))).toEqual(["Effective Date must be a valid date."]);
+    expect(validateNda(completeForm({ effectiveDate: "" }))).toEqual(["Effective Date must be a valid date."]);
   });
 
   it.each([1, 2, 50, 99])("accepts %i years for both terms", (years) => {
@@ -87,7 +89,7 @@ describe("validate edge cases", () => {
       mndaTerm: { kind: "expires", years },
       confidentialityTerm: { kind: "years", years },
     });
-    expect(validate(form)).toEqual([]);
+    expect(validateNda(form)).toEqual([]);
   });
 
   it.each([0, -1, 100, 1.5, Number.NaN, Number.POSITIVE_INFINITY])("rejects %d years", (years) => {
@@ -95,7 +97,7 @@ describe("validate edge cases", () => {
       mndaTerm: { kind: "expires", years },
       confidentialityTerm: { kind: "years", years },
     });
-    expect(validate(form)).toEqual([
+    expect(validateNda(form)).toEqual([
       "MNDA Term must be a whole number of years between 1 and 99.",
       "Term of Confidentiality must be a whole number of years between 1 and 99.",
     ]);
@@ -103,7 +105,7 @@ describe("validate edge cases", () => {
 
   it("ignores the year count when the open-ended option is selected", () => {
     const form = completeForm({ mndaTerm: { kind: "untilTerminated" }, confidentialityTerm: { kind: "perpetual" } });
-    expect(validate(form)).toEqual([]);
+    expect(validateNda(form)).toEqual([]);
   });
 
   it("does not require optional fields (signers, notice addresses, modifications)", () => {
@@ -112,13 +114,13 @@ describe("validate edge cases", () => {
       party1: { company: "Acme", name: "", title: "", noticeAddress: "" },
       party2: { company: "Globex", name: "", title: "", noticeAddress: "" },
     });
-    expect(validate(form)).toEqual([]);
+    expect(validateNda(form)).toEqual([]);
   });
 
   it("does not mutate its input", () => {
     const form = completeForm();
     const snapshot = structuredClone(form);
-    validate(form);
+    validateNda(form);
     buildNda(form, TERMS);
     expect(form).toEqual(snapshot);
   });

@@ -1,28 +1,5 @@
-import type { Clause, Run, StandardTerms } from "./types";
-
-// Inline markup used by the Common Paper templates: **bold**,
-// <span class="coverpage_link">Term</span> and [text](url).
-const INLINE_TOKEN =
-  /(\*\*[^*]+\*\*|<span class="coverpage_link">[^<]+<\/span>|\[[^\]]+\]\([^)]+\))/;
-
-/** Split a line of template markdown into styled runs. */
-export function parseInline(text: string): Run[] {
-  return text
-    .split(INLINE_TOKEN)
-    .filter((part) => part !== "")
-    .map((part): Run => {
-      const bold = part.match(/^\*\*([^*]+)\*\*$/);
-      if (bold) return { text: bold[1], bold: true };
-
-      const term = part.match(/^<span class="coverpage_link">([^<]+)<\/span>$/);
-      if (term) return { text: term[1], term: true };
-
-      const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-      if (link) return { text: link[1], href: link[2] };
-
-      return { text: part };
-    });
-}
+import { parseInline } from "@/lib/documents/parseInline";
+import type { Clause, Run, StandardTerms } from "@/lib/documents/types";
 
 const CLAUSE = /^(\d+)\.\s+\*\*([^*]+)\*\*\.\s*(.*)$/;
 
@@ -48,9 +25,10 @@ export function parseStandardTerms(markdown: string): StandardTerms {
     const clause = line.match(CLAUSE);
     if (clause) {
       clauses.push({
-        number: Number(clause[1]),
-        title: clause[2].trim(),
+        label: `${clause[1]}.`,
+        title: `${clause[2].trim()}.`,
         body: parseInline(clause[3]),
+        depth: 0,
       });
       continue;
     }

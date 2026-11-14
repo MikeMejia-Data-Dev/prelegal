@@ -1,18 +1,13 @@
-import type {
-  CoverField,
-  NdaDocument,
-  NdaFormData,
-  Party,
-  StandardTerms,
-} from "./types";
+import { attribution, COVER_PAGE_NOTICE, emptyParty, partyRows } from "@/lib/documents/coverPage";
+import { documentFileName } from "@/lib/documents/fileName";
+import type { CoverField, LegalDocument, StandardTerms } from "@/lib/documents/types";
+
+import type { NdaFormData } from "./types";
 
 export const STANDARD_TERMS_URL = "https://commonpaper.com/standards/mutual-nda/1.0";
-export const LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/";
 
 const DEFAULT_PURPOSE =
   "Evaluating whether to enter into a business relationship with the other party.";
-
-const emptyParty = (): Party => ({ company: "", name: "", title: "", noticeAddress: "" });
 
 /** Today's date as yyyy-mm-dd in the user's local time zone. */
 export function todayIso(now: Date = new Date()): string {
@@ -54,7 +49,7 @@ const isValidYears = (years: number) => Number.isInteger(years) && years >= 1 &&
 const pluralYears = (years: number) => `${years} year${years === 1 ? "" : "s"}`;
 
 /** Human-readable list of problems that prevent the NDA from being completed. */
-export function validate(form: NdaFormData): string[] {
+export function validateNda(form: NdaFormData): string[] {
   const errors: string[] = [];
   if (!form.purpose.trim()) errors.push("Purpose is required.");
   if (!formatDate(form.effectiveDate)) errors.push("Effective Date must be a valid date.");
@@ -102,11 +97,10 @@ function confidentialityTermText(form: NdaFormData): string {
  * attach the Standard Terms. Missing required values become bracketed
  * placeholders so the preview always renders.
  */
-export function buildNda(form: NdaFormData, standardTerms: StandardTerms): NdaDocument {
-  const { party1, party2 } = form;
-
+export function buildNda(form: NdaFormData, standardTerms: StandardTerms): LegalDocument {
   return {
     title: "Mutual Non-Disclosure Agreement",
+    introHeading: "Using this Mutual Non-Disclosure Agreement",
     intro: [
       { text: "This Mutual Non-Disclosure Agreement (the “MNDA”) consists of: (1) this Cover Page (“" },
       { text: "Cover Page", bold: true },
@@ -137,44 +131,14 @@ export function buildNda(form: NdaFormData, standardTerms: StandardTerms): NdaDo
     ],
     signingStatement:
       "By signing this Cover Page, each party agrees to enter into this MNDA as of the Effective Date.",
-    partyRows: [
-      { label: "Signature", party1: "", party2: "", handwritten: true },
-      { label: "Print Name", party1: party1.name.trim(), party2: party2.name.trim() },
-      { label: "Title", party1: party1.title.trim(), party2: party2.title.trim() },
-      { label: "Company", party1: party1.company.trim(), party2: party2.company.trim() },
-      {
-        label: "Notice Address",
-        description: "Use either email or postal address",
-        party1: party1.noticeAddress.trim(),
-        party2: party2.noticeAddress.trim(),
-      },
-      { label: "Date", party1: "", party2: "", handwritten: true },
-    ],
-    coverAttribution: [
-      { text: "Common Paper Mutual Non-Disclosure Agreement (Version 1.0) free to use under " },
-      { text: "CC BY 4.0", href: LICENSE_URL },
-      // CC BY 4.0 requires indicating that the licensed material was modified.
-      { text: ". Cover Page completed using Prelegal; Standard Terms unmodified." },
-    ],
+    partyLabels: ["PARTY 1", "PARTY 2"],
+    partyRows: partyRows(form.party1, form.party2),
+    coverAttribution: attribution("Mutual Non-Disclosure Agreement (Version 1.0)", COVER_PAGE_NOTICE),
     standardTerms,
   };
 }
 
-// Letters that Unicode normalization does not reduce to ASCII.
-const TRANSLITERATE: Record<string, string> = {
-  Ł: "L", ł: "l", Ø: "O", ø: "o", Đ: "D", đ: "d", Æ: "AE", æ: "ae", Œ: "OE", œ: "oe", ß: "ss", Þ: "Th", þ: "th",
-};
-
 /** Download file name, e.g. "Mutual-NDA-Acme-Inc-Globex.pdf"; accents are dropped ("Łódź" -> "Lodz"). */
 export function ndaFileName(form: NdaFormData, extension: "pdf" | "docx"): string {
-  const slug = (s: string) =>
-    s
-      .trim()
-      .replace(/[ŁłØøĐđÆæŒœßÞþ]/g, (c) => TRANSLITERATE[c])
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^A-Za-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  const parts = ["Mutual-NDA", slug(form.party1.company), slug(form.party2.company)].filter(Boolean);
-  return `${parts.join("-")}.${extension}`;
+  return documentFileName("Mutual-NDA", [form.party1.company, form.party2.company], extension);
 }

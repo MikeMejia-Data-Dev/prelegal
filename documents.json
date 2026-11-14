@@ -1,0 +1,185 @@
+{
+  "documents": [
+    {
+      "id": "mutual-nda",
+      "name": "Mutual Non-Disclosure Agreement",
+      "shortName": "Mutual-NDA",
+      "description": "Two parties share confidential information (e.g. to evaluate a deal) and each protects the other's information.",
+      "template": "Mutual-NDA.md",
+      "parties": ["Party 1", "Party 2"],
+      "keyTerms": []
+    },
+    {
+      "id": "csa",
+      "name": "Cloud Service Agreement",
+      "shortName": "CSA",
+      "description": "A provider gives a customer access to a SaaS / cloud product.",
+      "template": "CSA.md",
+      "parties": ["Provider", "Customer"],
+      "keyTerms": [
+        { "key": "effectiveDate", "label": "Effective Date", "required": true },
+        { "key": "orderDate", "label": "Order Date", "description": "Date of the first Order Form, if different from the Effective Date", "required": false },
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "description": "Length of each subscription term, e.g. 1 year", "required": true },
+        { "key": "fees", "label": "Fees", "description": "Subscription fees and payment terms", "required": true },
+        { "key": "technicalSupport", "label": "Technical Support", "description": "Support the provider offers", "required": false },
+        { "key": "nonRenewalNoticeDate", "label": "Non-Renewal Notice Date", "description": "How far ahead a party must give notice to stop auto-renewal", "required": false },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's total liability", "required": true },
+        { "key": "governingLaw", "label": "Governing Law", "required": true },
+        { "key": "chosenCourts", "label": "Chosen Courts", "required": true }
+      ]
+    },
+    {
+      "id": "sla",
+      "name": "Service Level Agreement",
+      "shortName": "SLA",
+      "description": "Uptime, support response times and service credits for a cloud service.",
+      "template": "sla.md",
+      "parties": ["Provider", "Customer"],
+      "keyTerms": [
+        { "key": "targetUptime", "label": "Target Uptime", "description": "e.g. 99.9% per month", "required": true },
+        { "key": "uptimeCredit", "label": "Uptime Credit", "description": "Credit when uptime falls below target", "required": true },
+        { "key": "targetResponseTime", "label": "Target Response Time", "description": "e.g. 4 business hours", "required": true },
+        { "key": "responseTimeCredit", "label": "Response Time Credit", "description": "Credit when responses are late", "required": false },
+        { "key": "supportChannel", "label": "Support Channel", "description": "Where support requests are sent", "required": true },
+        { "key": "scheduledDowntime", "label": "Scheduled Downtime", "description": "Planned maintenance windows", "required": false },
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "description": "Subscription term the SLA applies to", "required": false }
+      ]
+    },
+    {
+      "id": "dpa",
+      "name": "Data Processing Agreement",
+      "shortName": "DPA",
+      "description": "A provider processes personal data on a customer's behalf (GDPR processor terms).",
+      "template": "DPA.md",
+      "parties": ["Provider", "Customer"],
+      "keyTerms": [
+        { "key": "agreement", "label": "Agreement", "description": "The main agreement this DPA supplements", "required": true },
+        { "key": "natureAndPurposeOfProcessing", "label": "Nature and Purpose of Processing", "required": true },
+        { "key": "categoriesOfPersonalData", "label": "Categories of Personal Data", "required": true },
+        { "key": "categoriesOfDataSubjects", "label": "Categories of Data Subjects", "required": true },
+        { "key": "durationOfProcessing", "label": "Duration of Processing", "required": true },
+        { "key": "frequencyOfTransfer", "label": "Frequency of Transfer", "required": false },
+        { "key": "specialCategoryData", "label": "Special Category Data", "description": "Sensitive data, if any, and its safeguards", "required": false },
+        { "key": "approvedSubprocessors", "label": "Approved Subprocessors", "required": false },
+        { "key": "providerSecurityContact", "label": "Provider Security Contact", "required": true },
+        { "key": "governingMemberState", "label": "Governing Member State", "description": "EU member state whose law governs", "required": true }
+      ]
+    },
+    {
+      "id": "design-partner",
+      "name": "Design Partner Agreement",
+      "shortName": "Design-Partner-Agreement",
+      "description": "An early partner gets product access in exchange for feedback.",
+      "template": "design-partner-agreement.md",
+      "parties": ["Provider", "Partner"],
+      "keyTerms": [
+        { "key": "effectiveDate", "label": "Effective Date", "required": true },
+        { "key": "program", "label": "Program", "description": "The design partner program and what the partner gets access to", "required": true },
+        { "key": "term", "label": "Term", "description": "How long the agreement lasts", "required": true },
+        { "key": "fees", "label": "Fees", "description": "Fees, if any", "required": false },
+        { "key": "governingLaw", "label": "Governing Law", "required": true },
+        { "key": "chosenCourts", "label": "Chosen Courts", "required": true }
+      ]
+    },
+    {
+      "id": "psa",
+      "name": "Professional Services Agreement",
+      "shortName": "PSA",
+      "description": "A provider delivers services and deliverables under Statements of Work.",
+      "template": "psa.md",
+      "parties": ["Provider", "Customer"],
+      "keyTerms": [
+        { "key": "effectiveDate", "label": "Effective Date", "required": true },
+        { "key": "deliverables", "label": "Deliverables", "description": "What the provider will deliver (first SOW)", "required": true },
+        { "key": "fees", "label": "Fees", "description": "Fees for the services", "required": true },
+        { "key": "paymentPeriod", "label": "Payment Period", "description": "Days to pay an invoice", "required": false },
+        { "key": "sowTerm", "label": "SOW Term", "description": "How long the SOW lasts", "required": false },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's total liability", "required": true },
+        { "key": "governingLaw", "label": "Governing Law", "required": true },
+        { "key": "chosenCourts", "label": "Chosen Courts", "required": true }
+      ]
+    },
+    {
+      "id": "partnership",
+      "name": "Partnership Agreement",
+      "shortName": "Partnership-Agreement",
+      "description": "Two businesses partner, each performing agreed obligations.",
+      "template": "Partnership-Agreement.md",
+      "parties": ["Company", "Partner"],
+      "keyTerms": [
+        { "key": "effectiveDate", "label": "Effective Date", "required": true },
+        { "key": "endDate", "label": "End Date", "required": false },
+        { "key": "obligations", "label": "Obligations", "description": "What each party will do", "required": true },
+        { "key": "territory", "label": "Territory", "required": false },
+        { "key": "paymentSchedule", "label": "Payment Schedule", "required": false },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's total liability", "required": true },
+        { "key": "governingLaw", "label": "Governing Law", "required": true },
+        { "key": "chosenCourts", "label": "Chosen Courts", "required": true }
+      ]
+    },
+    {
+      "id": "baa",
+      "name": "Business Associate Agreement",
+      "shortName": "BAA",
+      "description": "HIPAA terms for a provider that handles protected health information (PHI).",
+      "template": "BAA.md",
+      "parties": ["Provider", "Company"],
+      "keyTerms": [
+        { "key": "agreement", "label": "Agreement", "description": "The main agreement this BAA supplements", "required": true },
+        { "key": "baaEffectiveDate", "label": "BAA Effective Date", "required": true },
+        { "key": "breachNotificationPeriod", "label": "Breach Notification Period", "description": "e.g. 30 days", "required": true },
+        { "key": "limitations", "label": "Limitations", "description": "Limits on use or disclosure of PHI, if any", "required": false }
+      ]
+    },
+    {
+      "id": "software-license",
+      "name": "Software License Agreement",
+      "shortName": "Software-License-Agreement",
+      "description": "A customer licenses on-premise software to install and use.",
+      "template": "Software-License-Agreement.md",
+      "parties": ["Provider", "Customer"],
+      "keyTerms": [
+        { "key": "effectiveDate", "label": "Effective Date", "required": true },
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "required": true },
+        { "key": "permittedUses", "label": "Permitted Uses", "required": true },
+        { "key": "licenseLimits", "label": "License Limits", "description": "e.g. number of users or installations", "required": false },
+        { "key": "fees", "label": "Fees", "required": true },
+        { "key": "warrantyPeriod", "label": "Warranty Period", "required": false },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's total liability", "required": true },
+        { "key": "governingLaw", "label": "Governing Law", "required": true },
+        { "key": "chosenCourts", "label": "Chosen Courts", "required": true }
+      ]
+    },
+    {
+      "id": "pilot",
+      "name": "Pilot Agreement",
+      "shortName": "Pilot-Agreement",
+      "description": "A customer evaluates a product during a limited pilot period.",
+      "template": "Pilot-Agreement.md",
+      "parties": ["Provider", "Customer"],
+      "keyTerms": [
+        { "key": "effectiveDate", "label": "Effective Date", "required": true },
+        { "key": "pilotPeriod", "label": "Pilot Period", "description": "e.g. 90 days", "required": true },
+        { "key": "fees", "label": "Fees", "description": "Pilot fees, if any", "required": false },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's total liability", "required": true },
+        { "key": "governingLaw", "label": "Governing Law", "required": true },
+        { "key": "chosenCourts", "label": "Chosen Courts", "required": true }
+      ]
+    },
+    {
+      "id": "ai-addendum",
+      "name": "AI Addendum",
+      "shortName": "AI-Addendum",
+      "description": "Adds AI terms (inputs, outputs, model training) to an existing agreement.",
+      "template": "AI-Addendum.md",
+      "parties": ["Provider", "Customer"],
+      "keyTerms": [
+        { "key": "agreement", "label": "Agreement", "description": "The main agreement this addendum supplements", "required": true },
+        { "key": "trainingData", "label": "Training Data", "description": "Customer data the provider may use for training, if any", "required": true },
+        { "key": "trainingPurposes", "label": "Training Purposes", "required": false },
+        { "key": "trainingRestrictions", "label": "Training Restrictions", "required": false },
+        { "key": "improvementRestrictions", "label": "Improvement Restrictions", "required": false }
+      ]
+    }
+  ]
+}

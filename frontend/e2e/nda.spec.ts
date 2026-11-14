@@ -4,54 +4,27 @@ import JSZip from "jszip";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import type { NdaFormData, Party } from "../src/lib/nda/types";
-
-const coverPage = (page: Page) => page.getByRole("region", { name: "Cover Page" });
-
-let replyCount = 0;
-
-/** Send a chat message; the mocked /api/chat applies `update` to the fields the page sends. */
-async function say(page: Page, text: string, update: (f: NdaFormData) => NdaFormData) {
-  const reply = `Reply ${++replyCount}`;
-  await page.route(
-    "**/api/chat",
-    async (route) => {
-      const { fields } = route.request().postDataJSON();
-      await route.fulfill({ json: { reply, fields: update(fields) } });
-    },
-    { times: 1 },
-  );
-  await page.getByRole("textbox", { name: "Message" }).fill(text);
-  await page.getByRole("button", { name: "Send" }).click();
-  await expect(page.getByText(reply)).toBeVisible();
-}
-
-const setParty = (n: 1 | 2, values: Partial<Party>) => (f: NdaFormData) =>
-  n === 1 ? { ...f, party1: { ...f.party1, ...values } } : { ...f, party2: { ...f.party2, ...values } };
+import { coverPage, nda, openCreator, say, setParty } from "./chat";
 
 const fillRequired = (page: Page) =>
-  say(page, "Acme and Globex under Delaware law", (f) => ({
-    ...f,
-    governingLaw: "Delaware",
-    jurisdiction: "New Castle, DE",
-    party1: { ...f.party1, company: "Acme, Inc.", name: "Ada Lovelace" },
-    party2: { ...f.party2, company: "Globex" },
-  }));
+  say(
+    page,
+    "Acme and Globex under Delaware law",
+    nda((f) => ({
+      ...f,
+      governingLaw: "Delaware",
+      jurisdiction: "New Castle, DE",
+      party1: { ...f.party1, company: "Acme, Inc.", name: "Ada Lovelace" },
+      party2: { ...f.party2, company: "Globex" },
+    })),
+  );
 
 test.beforeEach(async ({ page }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text());
-  });
-  await page.goto("/nda/");
-  // Fail on hydration mismatches or other runtime errors.
-  test.info().attach("console-errors", { body: JSON.stringify(errors) });
-  await expect(page.getByRole("heading", { name: "Mutual NDA Creator" })).toBeVisible();
-  expect(errors, "no console or page errors on load").toEqual([]);
+  await openCreator(page);
+  await say(page, "I need an NDA", nda());
 });
 
-test("loads with today's date and downloads disabled", async ({ page }) => {
+test("starts from today's date with downloads disabled", async ({ page }) => {
   const today = await page.evaluate(() => {
     const d = new Date();
     const p = (n: number) => String(n).padStart(2, "0");
@@ -72,8 +45,7 @@ test("renders the full Standard Terms from the templates dataset", async ({ page
   await expect(clauses.last()).toContainText("11. General.");
 });
 
-test("the chat greets the user and the preview follows the AI's updates", async ({ page }) => {
-  await expect(page.getByRole("log", { name: "Conversation" })).toContainText("draft a Mutual NDA");
+test("the preview follows the AI's updates", async ({ page }) => {
   await fillRequired(page);
   await expect(page.getByRole("log", { name: "Conversation" })).toContainText("Acme and Globex under Delaware law");
   await expect(coverPage(page)).toContainText("Delaware");
@@ -81,7 +53,7 @@ test("the chat greets the user and the preview follows the AI's updates", async 
   await expect(coverPage(page).getByRole("row", { name: /Print Name/ })).toContainText("Ada Lovelace");
   await expect(page.getByRole("status")).toHaveCount(0);
 
-  await say(page, "Keep it confidential forever", (f) => ({ ...f, confidentialityTerm: { kind: "perpetual" } }));
+  await say(page, "Keep it confidential forever", nda((f) => ({ ...f, confidentialityTerm: { kind: "perpetual" } })));
   await expect(coverPage(page)).toContainText("In perpetuity.");
 });
 
@@ -114,23 +86,6 @@ test("the page is usable without horizontal scrolling", async ({ page }) => {
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
-});
-
-test("the chat can be used with the keyboard", async ({ page }) => {
-  await page.route("**/api/chat", (route) =>
-    route.fulfill({ json: { reply: "Got it.", fields: route.request().postDataJSON().fields } }),
-  );
-  await page.getByRole("textbox", { name: "Message" }).fill("Hello");
-  await page.keyboard.press("Enter");
-  await expect(page.getByText("Got it.")).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Message" })).toHaveValue("");
-});
-
-test("shows an error when the assistant is unavailable", async ({ page }) => {
-  await page.route("**/api/chat", (route) => route.fulfill({ status: 500 }));
-  await page.getByRole("textbox", { name: "Message" }).fill("Hello");
-  await page.getByRole("button", { name: "Send" }).click();
-  await expect(page.getByRole("region", { name: "Chat" }).getByRole("alert")).toContainText("The assistant couldn't respond");
 });
 
 test("PDF embeds the Unicode font and keeps Latin Extended / Cyrillic names", async ({ page }) => {
@@ -172,7 +127,7 @@ test("a long email address wraps inside the preview table without stretching its
 });
 
 test("multi-line Modifications keep their line breaks in the preview", async ({ page }) => {
-  await say(page, "Two changes", (f) => ({ ...f, modifications: "1. Section 3(d) deleted.\n2. Term extended." }));
+  await say(page, "Two changes", nda((f) => ({ ...f, modifications: "1. Section 3(d) deleted.\n2. Term extended." })));
   const value = coverPage(page).locator("dt", { hasText: "MNDA Modifications" }).locator("xpath=following-sibling::dd[last()]");
   const box = await value.boundingBox();
   const lineHeight = await value.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));

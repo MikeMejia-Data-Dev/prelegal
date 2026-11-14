@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildNda, defaultFormData } from "./buildNda";
 import { parseStandardTerms } from "./parseStandardTerms";
-import type { Run } from "./types";
+import type { Run } from "@/lib/documents/types";
 
 const TEMPLATE = readFileSync(path.resolve(__dirname, "../../../../templates/Mutual-NDA.md"), "utf8");
 const COVER_TEMPLATE = readFileSync(
@@ -40,7 +40,7 @@ describe("Standard Terms fidelity", () => {
     "clause %i text matches the template exactly",
     (n, line) => {
       const clause = terms.clauses[n - 1];
-      const rendered = `${clause.number}. ${clause.title}. ${text(clause.body)}`;
+      const rendered = `${clause.label} ${clause.title} ${text(clause.body)}`;
       expect(normalize(rendered)).toBe(normalize(stripMarkup(line.trim())));
     },
   );
@@ -50,7 +50,7 @@ describe("Standard Terms fidelity", () => {
     const expected = words(stripMarkup(TEMPLATE.replace(/^# .*$/m, "")));
     const actual = words(
       [
-        ...terms.clauses.map((c) => `${c.number}. ${c.title}. ${text(c.body)}`),
+        ...terms.clauses.map((c) => `${c.label} ${c.title} ${text(c.body)}`),
         text(terms.attribution),
       ].join(" "),
     );

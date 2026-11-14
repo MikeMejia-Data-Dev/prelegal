@@ -6,9 +6,11 @@ import {
   formatDate,
   ndaFileName,
   todayIso,
-  validate,
+  validateNda,
 } from "./buildNda";
-import type { NdaFormData, StandardTerms } from "./types";
+import type { StandardTerms } from "@/lib/documents/types";
+
+import type { NdaFormData } from "./types";
 
 const TERMS: StandardTerms = { title: "Standard Terms", clauses: [], attribution: [] };
 
@@ -35,7 +37,7 @@ describe("dates", () => {
   it("rejects partially typed years instead of mapping them to the 1900s", () => {
     expect(formatDate("0026-11-12")).toBe("");
     const form = { ...completeForm(), effectiveDate: "0026-11-12" };
-    expect(validate(form)).toEqual(["Effective Date must be a valid date."]);
+    expect(validateNda(form)).toEqual(["Effective Date must be a valid date."]);
   });
 
   it("defaults the effective date to today", () => {
@@ -44,13 +46,13 @@ describe("dates", () => {
   });
 });
 
-describe("validate", () => {
+describe("validateNda", () => {
   it("accepts a complete form", () => {
-    expect(validate(completeForm())).toEqual([]);
+    expect(validateNda(completeForm())).toEqual([]);
   });
 
   it("reports every missing required field", () => {
-    const errors = validate(defaultFormData());
+    const errors = validateNda(defaultFormData());
     expect(errors).toEqual([
       "Governing Law (state) is required.",
       "Jurisdiction is required.",
@@ -61,7 +63,7 @@ describe("validate", () => {
 
   it("rejects invalid year counts", () => {
     const form = { ...completeForm(), mndaTerm: { kind: "expires", years: 0 } } as NdaFormData;
-    expect(validate(form)).toEqual([
+    expect(validateNda(form)).toEqual([
       "MNDA Term must be a whole number of years between 1 and 99.",
     ]);
   });

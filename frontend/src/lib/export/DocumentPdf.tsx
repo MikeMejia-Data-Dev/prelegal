@@ -1,7 +1,7 @@
 import { Document, Font, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { ComponentProps, ReactNode } from "react";
 
-import type { NdaDocument, Run } from "../types";
+import type { LegalDocument, Run } from "@/lib/documents/types";
 import { breakLongTokens } from "./pdfText";
 
 /**
@@ -92,19 +92,19 @@ function Runs({ runs }: { runs: Run[] }) {
   });
 }
 
-export function NdaPdf({ nda }: { nda: NdaDocument }) {
-  const lastRow = nda.partyRows.length - 1;
+export function DocumentPdf({ doc }: { doc: LegalDocument }) {
+  const lastRow = doc.partyRows.length - 1;
 
   return (
-    <Document title={nda.title} creator="Prelegal" producer="Prelegal">
+    <Document title={doc.title} creator="Prelegal" producer="Prelegal">
       <Page size="LETTER" style={styles.page}>
-        <P style={styles.title}>{nda.title}</P>
-        <P style={styles.heading}>USING THIS MUTUAL NON-DISCLOSURE AGREEMENT</P>
+        <P style={styles.title}>{doc.title}</P>
+        <P style={styles.heading}>{doc.introHeading.toUpperCase()}</P>
         <P style={styles.paragraph}>
-          <Runs runs={nda.intro} />
+          <Runs runs={doc.intro} />
         </P>
 
-        {nda.coverFields.map((field) => (
+        {doc.coverFields.map((field) => (
           // Not wrap={false}: a value taller than a page (e.g. long
           // Modifications) must flow onto the next page instead of being
           // clipped. minPresenceAhead keeps a label from being stranded alone
@@ -120,14 +120,14 @@ export function NdaPdf({ nda }: { nda: NdaDocument }) {
 
         {/* Keep the signing statement, signature table and attribution together. */}
         <View wrap={false}>
-          <P style={[styles.paragraph, { marginTop: 6 }]}>{nda.signingStatement}</P>
+          <P style={[styles.paragraph, { marginTop: 6 }]}>{doc.signingStatement}</P>
           <View style={styles.table}>
             <View style={styles.row}>
               <Text style={styles.labelCell} />
-              <P style={[styles.partyCell, styles.partyCellDivider, styles.headCell]}>PARTY 1</P>
-              <P style={[styles.partyCell, styles.headCell]}>PARTY 2</P>
+              <P style={[styles.partyCell, styles.partyCellDivider, styles.headCell]}>{doc.partyLabels[0]}</P>
+              <P style={[styles.partyCell, styles.headCell]}>{doc.partyLabels[1]}</P>
             </View>
-            {nda.partyRows.map((row, i) => (
+            {doc.partyRows.map((row, i) => (
               <View
                 key={row.label}
                 style={[i === lastRow ? styles.lastRow : styles.row, row.handwritten ? styles.handwrittenRow : {}]}
@@ -144,23 +144,23 @@ export function NdaPdf({ nda }: { nda: NdaDocument }) {
             ))}
           </View>
           <P style={styles.footer}>
-            <Runs runs={nda.coverAttribution} />
+            <Runs runs={doc.coverAttribution} />
           </P>
         </View>
       </Page>
 
       <Page size="LETTER" style={styles.page}>
-        <P style={styles.title}>{nda.standardTerms.title}</P>
-        {nda.standardTerms.clauses.map((clause) => (
-          <P key={clause.number} style={styles.paragraph}>
+        <P style={styles.title}>{doc.standardTerms.title}</P>
+        {doc.standardTerms.clauses.map((clause, i) => (
+          <P key={i} style={[styles.paragraph, { marginLeft: clause.depth * 16 }]}>
             <Text style={styles.bold}>
-              {clause.number}. {clause.title}.
+              {clause.label} {clause.title}
             </Text>{" "}
             <Runs runs={clause.body} />
           </P>
         ))}
         <P style={styles.footer}>
-          <Runs runs={nda.standardTerms.attribution} />
+          <Runs runs={doc.standardTerms.attribution} />
         </P>
       </Page>
     </Document>

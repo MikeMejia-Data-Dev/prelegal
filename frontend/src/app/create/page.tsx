@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { NdaCreator } from "@/components/NdaCreator";
-import { LICENSE_URL } from "@/lib/nda/buildNda";
-import { loadStandardTerms } from "@/lib/nda/loadStandardTerms";
+import { DocumentCreator } from "@/components/DocumentCreator";
+import { loadCatalog } from "@/lib/documents/loadCatalog";
+import { LICENSE_URL } from "@/lib/documents/coverPage";
 
-export const metadata: Metadata = { title: "Mutual NDA Creator | Prelegal" };
+export const metadata: Metadata = { title: "Agreement Creator | Prelegal" };
 
-export default async function NdaPage() {
-  // Read from templates/Mutual-NDA.md at build time.
-  const standardTerms = await loadStandardTerms();
+export default async function CreatePage() {
+  // Read documents.json and templates/ at build time.
+  const catalog = await loadCatalog();
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
@@ -20,17 +20,17 @@ export default async function NdaPage() {
             Sign out
           </Link>
         </div>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-indigo-950">Mutual NDA Creator</h1>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-indigo-950">Agreement Creator</h1>
         <p className="mt-2 text-slate-600">
-          Chat with the AI assistant about your deal. It fills in the Common Paper Mutual Non-Disclosure
-          Agreement as you talk, and you can download the completed agreement as a PDF or Word document.
+          Chat with the AI assistant about your deal. It picks the right Common Paper agreement, fills it
+          in as you talk, and you can download the completed agreement as a PDF or Word document.
         </p>
       </header>
 
-      <NdaCreator standardTerms={standardTerms} />
+      <DocumentCreator catalog={catalog} />
 
       <footer className="mt-12 border-t border-slate-200 pt-6 text-xs text-slate-500">
-        Agreement text: Common Paper Mutual NDA Version 1.0, licensed under{" "}
+        Agreement text: Common Paper standard agreements, licensed under{" "}
         <a className="underline" href={LICENSE_URL} target="_blank" rel="noreferrer">
           CC BY 4.0
         </a>

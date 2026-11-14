@@ -3,9 +3,10 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 
-import { defaultFormData } from "../buildNda";
+import { buildNda, defaultFormData } from "@/lib/nda/buildNda";
+import { parseStandardTerms } from "@/lib/nda/parseStandardTerms";
 import { PDF_CHARSET_RANGES } from "./pdfCharset";
-import { breakLongTokens, unsupportedPdfCharacters, unsupportedPdfCharactersInForm } from "./pdfText";
+import { breakLongTokens, unsupportedPdfCharacters, unsupportedPdfCharactersInDocument } from "./pdfText";
 
 const fontkit = createRequire(import.meta.url)("fontkit");
 
@@ -36,7 +37,10 @@ describe("PDF font coverage", () => {
     const form = defaultFormData(new Date(2026, 0, 1));
     form.party2.noticeAddress = "東京";
     form.modifications = "→";
-    expect(unsupportedPdfCharactersInForm(form)).toEqual(["→", "東", "京"]);
+    const terms = parseStandardTerms(
+      readFileSync(path.resolve(__dirname, "../../../../templates/Mutual-NDA.md"), "utf8"),
+    );
+    expect(unsupportedPdfCharactersInDocument(buildNda(form, terms))).toEqual(["→", "東", "京"]);
   });
 });
 

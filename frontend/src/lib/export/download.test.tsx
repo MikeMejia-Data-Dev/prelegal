@@ -4,8 +4,8 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { buildNda, defaultFormData } from "../buildNda";
-import { downloadNda } from "./download";
+import { buildNda, defaultFormData } from "@/lib/nda/buildNda";
+import { downloadDocument } from "./download";
 
 const nda = buildNda(defaultFormData(new Date(2026, 10, 12)), { title: "Standard Terms", clauses: [], attribution: [] });
 
@@ -38,12 +38,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("downloadNda", () => {
+describe("downloadDocument", () => {
   it.each([
     ["pdf", "application/pdf"],
     ["docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
   ] as const)("saves a %s blob under the given file name", async (format, mime) => {
-    await downloadNda(nda, format, `Mutual-NDA.${format}`);
+    await downloadDocument(nda, format, `Mutual-NDA.${format}`);
 
     const blob = vi.mocked(URL.createObjectURL).mock.calls[0][0] as Blob;
     expect(blob.type).toBe(mime);
@@ -52,7 +52,7 @@ describe("downloadNda", () => {
   }, 30_000);
 
   it("removes the temporary link and revokes the object URL afterwards", async () => {
-    await downloadNda(nda, "docx", "x.docx");
+    await downloadDocument(nda, "docx", "x.docx");
     expect(document.querySelectorAll("a")).toHaveLength(0);
     expect(URL.revokeObjectURL).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1000);

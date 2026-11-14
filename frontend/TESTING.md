@@ -1,4 +1,4 @@
-# Testing the Mutual NDA Creator
+# Testing the Agreement Creator
 
 ## Automated tests
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | `npm test` | Vitest unit and component tests (node + jsdom), ~2s |
 | `npm run test:e2e` | Playwright end-to-end tests against `next dev` in the locally installed Google Chrome (desktop and Pixel 7 viewports) |
-| `E2E_LIVE=1 E2E_BASE_URL=http://localhost:8000 npx playwright test live-chat` | Real AI conversation against the running container |
+| `E2E_LIVE=1 E2E_BASE_URL=http://localhost:8000 npx playwright test live-chat` | Real AI conversations (NDA, Cloud Service Agreement, unsupported request) against the running container |
 | `npx tsc --noEmit` / `npm run lint` | Type check and lint |
 
 ### Coverage at a glance
@@ -15,17 +15,18 @@
 - **`parseStandardTerms.test.ts`, `templateFidelity.test.ts`**: every clause of `templates/Mutual-NDA.md` is reproduced word for word; no words lost; typographic quotes kept; CRLF input; Cover Page labels and signing statement match `Mutual-NDA-coverpage.md`.
 - **`export/export.test.tsx`, `export/exportContent.test.tsx`**: opens the generated DOCX (`word/document.xml`) and extracts PDF text with pdf.js to check the cover values, party table, all clauses, hyperlinks and XML escaping are actually in the files.
 - **`export/download.test.tsx`**: blob MIME types, download file name, temporary link cleanup, object URL revocation.
-- **`components/NdaCreator.test.tsx`**: chat with a mocked `/api/chat` (history and fields sent each turn, reply shown, waiting state, error handling), live preview, required-field gating of downloads, busy state / double-click protection, HTML escaping.
-- **`e2e/nda.spec.ts`**: real page load with no console errors (hydration), chat driven through a mocked `/api/chat`, real PDF and Word downloads, responsive layout, keyboard use.
-- **`e2e/live-chat.spec.ts`**: opt-in conversation with the real AI.
-- **`backend/tests/test_chat.py`**: prompt assembly, Structured Outputs call, `/api/chat` validation, and one live OpenAI test (skipped without `OPENAI_API_KEY`).
+- **`lib/documents/*.test.ts`**: every template parses into nested clauses with no markup left; `documents.json` covers the whole catalog; generic cover page, placeholders, validation and file names.
+- **`components/DocumentCreator.test.tsx`**: chat with a mocked `/api/chat` (draft sent each turn, reply shown, focus returns to the message box, waiting state, error handling), document list before a choice, NDA and Cloud Service Agreement previews, switching documents, required-field gating of downloads, busy state, HTML escaping.
+- **`e2e/nda.spec.ts`, `e2e/documents.spec.ts`**: real page load with no console errors (hydration), chat driven through a mocked `/api/chat`, real PDF and Word downloads for the NDA and a Cloud Service Agreement, responsive layout, keyboard use and focus.
+- **`e2e/live-chat.spec.ts`**: opt-in conversations with the real AI.
+- **`backend/tests/test_chat.py`**: catalog prompt, Structured Outputs call (NDA and generic fields), the appended follow-up question, `/api/chat` validation, and live OpenAI tests (skipped without `OPENAI_API_KEY`).
 
 ### Regression tests for fixed bugs
 
 These bugs were found by the review and the tests below, and are now fixed. Each has a test that would fail if it came back:
 
 1. DOCX: line breaks in multi-line Purpose/Modifications were lost. Now written as `<w:br/>`.
-2. PDF: characters outside Latin-1 (e.g. `Łódź`, Cyrillic) were garbled by the built-in Helvetica font. Now uses the bundled Noto Sans (`src/lib/nda/export/fonts`, SIL OFL). For characters Noto Sans lacks (CJK, Arabic, Hebrew, emoji, some symbols such as `→`), the PDF button is disabled with an explanation and Word stays available. After changing fonts, run `node scripts/generate-pdf-charset.mjs` (a test fails if you forget).
+2. PDF: characters outside Latin-1 (e.g. `Łódź`, Cyrillic) were garbled by the built-in Helvetica font. Now uses the bundled Noto Sans (`src/lib/export/fonts`, SIL OFL). For characters Noto Sans lacks (CJK, Arabic, Hebrew, emoji, some symbols such as `→`), the PDF button is disabled with an explanation and Word stays available. After changing fonts, run `node scripts/generate-pdf-charset.mjs` (a test fails if you forget).
 3. PDF: a stray hyphen was inserted where a line broke after a bold run ("Confidential Information-"). Hyphenation points are now disabled.
 4. PDF: a cover field taller than a page was clipped and the rest dropped. Fields now flow across pages.
 5. Preview: multi-line Modifications were shown on one line.
@@ -35,12 +36,12 @@ These bugs were found by the review and the tests below, and are now fixed. Each
 
 ## Manual test script
 
-Run `npm run dev` and open http://localhost:3000/nda/ (or start the container and open http://localhost:8000). Repeat the downloads in at least one of Word / LibreOffice and one PDF viewer (Acrobat, Preview, Chrome).
+Run `npm run dev` and open http://localhost:3000/create/ (or start the container and open http://localhost:8000). Repeat the downloads in at least one of Word / LibreOffice and one PDF viewer (Acrobat, Preview, Chrome).
 
 | # | Steps | Expected |
 | --- | --- | --- |
-| M1 | Load the page | Effective Date is today; both download buttons disabled; list of 4 missing fields shown |
-| M2 | Tell the chat both company names, governing law and jurisdiction | AI confirms and asks about missing details; buttons enable; preview shows values without amber highlights |
+| M1 | Load the page | Chat greeting; list of the 11 supported agreements; no download buttons |
+| M2 | Ask for an NDA between two companies under Delaware law, courts in Wilmington | NDA preview with today's date; AI confirms and ends with a question; buttons enable; no amber highlights |
 | M3 | Ask the chat to make the MNDA continue until terminated, then go back to 2 years | Preview MNDA Term follows each change |
 | M4 | Ask the chat to change something it already recorded (e.g. the jurisdiction) | Only that value changes in the preview |
 | M5 | Download PDF | File `Mutual-NDA-<Party1>-<Party2>.pdf`; cover page on page 1; Standard Terms on following pages; links clickable; no hyphenation in legal text |
@@ -49,17 +50,14 @@ Run `npm run dev` and open http://localhost:3000/nda/ (or start the container an
 | M8 | Give accented and non-Latin names (`Société Générale`, `Łódź`, `Жуков`, `山田`) | Rendered correctly in preview, PDF and Word |
 | M9 | Enter a long unbroken notice address (60+ chars) | Wraps inside its cell in preview, PDF and Word; table columns keep their proportions |
 | M10 | Paste ~200 lines into Modifications | Nothing is cut off in the PDF |
-| M11 | Resize to phone width (390px) | No horizontal scroll; form above preview |
-| M12 | Keyboard only: Tab through the form, Space on radios, Enter on download | All controls reachable and operable; focus visible |
+| M11 | Resize to phone width (390px) | No horizontal scroll; chat above preview |
+| M12 | Keyboard only: type a message, press Enter, then Tab to a download button and press Enter | Focus returns to the message box after each reply; all controls reachable; focus visible |
+| M13 | Start over and ask for a cloud service agreement with a provider, customer and fees | Cloud Service Agreement preview with PROVIDER/CUSTOMER columns and nested clauses (1.1, …); AI asks for the remaining key terms; PDF and Word download once complete |
+| M14 | Ask for a residential lease | AI says it can't generate it, offers the closest supported agreement and asks a question; the agreement list stays |
+| M15 | Decline the offered alternative | AI doesn't offer it again and asks what you want to achieve |
 
 ### Manual test results
 
-**Initial run (2026-11-13, before fixes):** M1–M4, M6, M11, M12 passed. M5 (stray hyphen), M7 (preview and Word), M8 (PDF), M9 (preview and PDF) and M10 (PDF stopped at about line 86) failed. `/favicon.ico` returned 404.
-
-**After fixes (2026-11-13, production build via `next start`, Chrome on Linux, LibreOffice for DOCX):**
-
-| # | Result |
-| --- | --- |
-| M1–M12 | Pass |
-| M8 | Latin Extended, Greek and Cyrillic render in the PDF. CJK and emoji disable the PDF with a message listing the characters; Word renders them |
-| M5 | Typical cover page (up to about 3 Modification lines) fits on page 1 with the signature table and attribution kept together; longer cover pages move the signature block to page 2 intact |
+The results recorded on 2026-11-13 were for the PL-2 form UI, which the chat has replaced. This script
+has not yet been re-run by hand since PL-5. The automated e2e and live AI tests above cover M1, M2,
+M5, M6, M8, M9, M11–M14.

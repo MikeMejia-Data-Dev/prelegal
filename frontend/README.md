@@ -1,7 +1,8 @@
-# Prelegal frontend: Mutual NDA Creator
+# Prelegal frontend: Agreement Creator
 
-A Next.js app that creates a [Common Paper Mutual NDA](https://commonpaper.com/standards/mutual-nda/1.0).
-The user chats with an AI assistant, which fills in the cover page terms and both parties' details.
+A Next.js app that drafts any of the [Common Paper](https://commonpaper.com/standards) agreements in
+`../documents.json`. The user chats with an AI assistant, which picks the agreement and fills in its
+cover page terms and both parties' details.
 A live preview of the full agreement updates as the chat goes, and the user downloads it as **PDF** or
 **Word (.docx)**. Chat messages go to the backend (`/api/chat`); documents are generated in the browser.
 
@@ -30,22 +31,23 @@ See [`TESTING.md`](TESTING.md) for test coverage and the manual test script.
 
 ## How it works
 
-- `src/app/page.tsx` is a fake sign-in screen (no authentication yet) that leads to `/nda/`.
-- `src/app/nda/page.tsx` is a server component. At build time it reads the Standard Terms from
-  `../templates/Mutual-NDA.md`, the dataset in the repository root (see `catalog.json`). **Run the
-  app from `frontend/` inside the full repository** so that this path resolves.
-- `src/lib/nda/parseStandardTerms.ts` turns the template markdown into numbered clauses.
-- `src/components/NdaChat.tsx` sends the conversation and current fields to `/api/chat`
-  (`src/lib/nda/chatApi.ts`) and replaces the fields with the AI's updated values.
-- `src/lib/nda/buildNda.ts` combines the field values and the clauses into one `NdaDocument`.
-  The preview (`src/components/NdaPreview.tsx`), the PDF (`src/lib/nda/export/NdaPdf.tsx`,
-  `@react-pdf/renderer`) and the Word file (`src/lib/nda/export/ndaDocx.ts`, `docx`) all render
+- `src/app/page.tsx` is a fake sign-in screen (no authentication yet) that leads to `/create/`.
+- `src/app/create/page.tsx` is a server component. At build time `src/lib/documents/loadCatalog.ts`
+  reads `../documents.json` and every template in `../templates/`. **Run the app from `frontend/`
+  inside the full repository** so that these paths resolve.
+- `src/components/DocumentChat.tsx` sends the conversation and the current draft (`documentId` and
+  fields) to `/api/chat` (`src/lib/documents/chatApi.ts`) and takes the AI's updated draft.
+- `src/lib/documents/draft.ts` turns the draft into a `LegalDocument`: the Mutual NDA keeps its typed
+  fields and builder (`src/lib/nda/`); every other agreement uses `buildDocument.ts` with the key
+  terms from `documents.json` and the nested clauses parsed by `parseTemplate.ts`.
+- The preview (`src/components/DocumentPreview.tsx`), the PDF (`src/lib/export/DocumentPdf.tsx`,
+  `@react-pdf/renderer`) and the Word file (`src/lib/export/documentDocx.ts`, `docx`) all render
   that same model.
 - The PDF and Word libraries are loaded only when a download button is clicked.
 
 ## Known limitations
 
-- The PDF uses the bundled Noto Sans font (`src/lib/nda/export/fonts`, SIL OFL), which covers Latin,
+- The PDF uses the bundled Noto Sans font (`src/lib/export/fonts`, SIL OFL), which covers Latin,
   Greek and Cyrillic. It has no glyphs for CJK, Arabic, Hebrew, emoji and some symbols such as `→`.
   If the fields contain any of these, the PDF button is disabled with a message listing the
   characters, and the Word export still works. If you change the fonts, run
@@ -53,7 +55,7 @@ See [`TESTING.md`](TESTING.md) for test coverage and the manual test script.
 
 ## License
 
-The application code is MIT licensed (see `../LICENSE`). The agreement text is the Common Paper Mutual
-NDA Version 1.0, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (see
+The application code is MIT licensed (see `../LICENSE`). The agreement text is from the Common Paper
+standard agreements, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (see
 `../templates/LICENSE.txt`). Generated documents include this attribution and note that the Cover Page
 was completed using Prelegal.

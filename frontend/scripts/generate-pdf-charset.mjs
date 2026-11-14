@@ -1,11 +1,11 @@
-// Regenerates src/lib/nda/export/pdfCharset.ts from the bundled PDF font, so the
+// Regenerates src/lib/export/pdfCharset.ts from the bundled PDF font, so the
 // app can warn about characters the PDF cannot render. Run after changing fonts:
 //   node scripts/generate-pdf-charset.mjs
 import { writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
 const fontkit = createRequire(import.meta.url)("fontkit");
-const dir = new URL("../src/lib/nda/export/", import.meta.url);
+const dir = new URL("../src/lib/export/", import.meta.url);
 
 const sets = ["NotoSans-Regular.ttf", "NotoSans-Bold.ttf"].map(
   (f) => new Set(fontkit.openSync(new URL(`fonts/${f}`, dir).pathname).characterSet),

@@ -4,6 +4,7 @@ WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 RUN npm ci
 COPY templates /app/templates
+COPY documents.json /app/documents.json
 COPY frontend ./
 RUN npm run build
 
@@ -15,6 +16,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY backend ./
 RUN uv sync --frozen --no-dev
 COPY --from=frontend /app/frontend/out /app/static
+COPY documents.json /app/documents.json
 ENV PRELEGAL_STATIC_DIR=/app/static PRELEGAL_DB_PATH=/app/data/prelegal.db
 EXPOSE 8000
 CMD ["uv", "run", "--no-dev", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
