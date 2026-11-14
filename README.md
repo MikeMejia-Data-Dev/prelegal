@@ -29,6 +29,7 @@ This project is currently in progress and is expected to be completed within one
 - A live preview of the full agreement that updates as you type, with missing required fields highlighted.
 - Download as PDF or Word (.docx). Both files contain the Standard Terms word for word.
 - Everything runs in the browser. Nothing you enter is sent to a server.
+- A placeholder sign-in screen leads into the app. There is no authentication yet.
 
 ## Repository layout
 
@@ -36,12 +37,26 @@ This project is currently in progress and is expected to be completed within one
 | --- | --- |
 | `templates/` | The Common Paper agreement templates, in Markdown, copied unmodified |
 | `catalog.json` | A list of the templates with a short description of each |
-| `frontend/` | The web app (Next.js, React, TypeScript, Tailwind) |
+| `frontend/` | The web app (Next.js, React, TypeScript, Tailwind), built as static files |
+| `backend/` | FastAPI app (uv project) that serves the API under `/api` and the frontend |
+| `scripts/` | Start and stop scripts for Mac, Linux and Windows (Git Bash) |
+| `Dockerfile` | Builds the frontend and backend into one container |
 
 ## Getting started
 
-Requires Node.js 22. Run the app from inside the full repository, because it reads the templates
-from `templates/`.
+Requires Docker. Start and stop the whole app with the script for your OS:
+
+```bash
+scripts/start-linux.sh   # or start-mac.sh / start-windows.sh -> http://localhost:8000
+scripts/stop-linux.sh    # or stop-mac.sh / stop-windows.sh
+```
+
+The SQLite database (`users` table) is recreated from scratch every time the container starts.
+Settings such as API keys go in `.env` at the repository root.
+
+### Local development
+
+Frontend (Node.js 22), run from inside the full repository because it reads `templates/`:
 
 ```bash
 cd frontend
@@ -49,7 +64,15 @@ npm install
 npm run dev      # http://localhost:3000
 ```
 
-Other commands, run from `frontend/`:
+Backend ([uv](https://docs.astral.sh/uv/)), serves `frontend/out` if it has been built:
+
+```bash
+cd backend
+uv run uvicorn backend.main:app --reload   # http://localhost:8000
+uv run pytest
+```
+
+Other frontend commands, run from `frontend/`:
 
 | Command | What it does |
 | --- | --- |

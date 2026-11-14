@@ -19,9 +19,9 @@ Run these from `frontend/`:
 | `npm run dev`   | Dev server at http://localhost:3000       |
 | `npm test`      | Unit and component tests (Vitest)         |
 | `npm run test:e2e` | End-to-end tests in Chrome (Playwright) |
+| `E2E_BASE_URL=http://localhost:8000 npm run test:e2e` | Same tests against the running container |
 | `npm run lint`  | ESLint                                    |
-| `npm run build` | Production build (static page)            |
-| `npm start`     | Serve the production build                |
+| `npm run build` | Static export to `out/` (served by the backend) |
 
 `.npmrc` sets `legacy-peer-deps=true`, because npm 10 crashes while resolving Vitest 4's optional peer
 dependencies.
@@ -30,7 +30,8 @@ See [`TESTING.md`](TESTING.md) for test coverage and the manual test script.
 
 ## How it works
 
-- `src/app/page.tsx` is a server component. At build time it reads the Standard Terms from
+- `src/app/page.tsx` is a fake sign-in screen (no authentication yet) that leads to `/nda/`.
+- `src/app/nda/page.tsx` is a server component. At build time it reads the Standard Terms from
   `../templates/Mutual-NDA.md`, the dataset in the repository root (see `catalog.json`). **Run the
   app from `frontend/` inside the full repository** so that this path resolves.
 - `src/lib/nda/parseStandardTerms.ts` turns the template markdown into numbered clauses.

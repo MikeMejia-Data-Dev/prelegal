@@ -21,7 +21,7 @@ test.beforeEach(async ({ page }) => {
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
-  await page.goto("/");
+  await page.goto("/nda/");
   // Fail on hydration mismatches or other runtime errors.
   test.info().attach("console-errors", { body: JSON.stringify(errors) });
   await expect(page.getByRole("heading", { name: "Mutual NDA Creator" })).toBeVisible();
