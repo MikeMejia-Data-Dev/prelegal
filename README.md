@@ -17,7 +17,7 @@ Prelegal guides the user through the Cover Page and combines it with the unchang
 This project is currently in progress and is expected to be completed within one week (by November 18,
 2026).
 
-All 11 Common Paper agreements in `catalog.json` can be drafted through the AI chat: Mutual NDA,
+All 11 Common Paper agreements in `catalog.json` (12 templates; the NDA has two) can be drafted through the AI chat: Mutual NDA,
 Cloud Service, Service Level, Data Processing, Design Partner, Professional Services, Partnership,
 Business Associate, Software License and Pilot Agreements, and the AI Addendum.
 

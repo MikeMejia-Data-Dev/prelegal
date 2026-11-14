@@ -1,3 +1,4 @@
+import { emptyParty } from "./coverPage";
 import type { Party } from "./types";
 
 /** A fill-in term on a document's cover page, from documents.json. */
@@ -27,8 +28,6 @@ export interface GenericFields {
   party1: Party;
   party2: Party;
 }
-
-const emptyParty = (): Party => ({ company: "", name: "", title: "", noticeAddress: "" });
 
 export function emptyGenericFields(): GenericFields {
   return { keyTerms: [], party1: emptyParty(), party2: emptyParty() };

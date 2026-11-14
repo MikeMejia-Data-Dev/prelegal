@@ -1,4 +1,4 @@
-import { buildNda, defaultFormData, ndaFileName, validate } from "@/lib/nda/buildNda";
+import { buildNda, defaultFormData, ndaFileName, validateNda } from "@/lib/nda/buildNda";
 
 import { buildDocument, validateDocument } from "./buildDocument";
 import { emptyGenericFields, NDA_ID, type DocumentSpec } from "./catalog";
@@ -23,23 +23,31 @@ export interface Draft {
 }
 
 /**
- * Build the chosen document from the AI's fields. Fields of the wrong shape
- * (e.g. right after switching documents) fall back to that document's defaults.
+ * Give the AI's fields the shape the chosen document needs. Right after a
+ * switch they may still have the old document's shape: start from the new
+ * document's defaults, keeping the party details.
  */
-export function draftDocument(catalog: Catalog, { documentId, fields }: DraftState): Draft | null {
-  const spec = catalog.specs.find((s) => s.id === documentId);
-  if (!spec) return null;
+export function fitFields({ documentId, fields }: DraftState): DraftState["fields"] {
+  if (!documentId) return null;
+  const parties = fields ? { party1: fields.party1, party2: fields.party2 } : {};
+  if (documentId === NDA_ID) return fields && "purpose" in fields ? fields : { ...defaultFormData(), ...parties };
+  return fields && "keyTerms" in fields ? fields : { ...emptyGenericFields(), ...parties };
+}
 
-  if (spec.id === NDA_ID) {
-    const form = fields && "purpose" in fields ? fields : defaultFormData();
-    return { spec, doc: buildNda(form, catalog.ndaTerms), errors: validate(form), fileName: (ext) => ndaFileName(form, ext) };
+/** Build the chosen document from its fields, or null while no document is chosen. */
+export function draftDocument(catalog: Catalog, state: DraftState): Draft | null {
+  const spec = catalog.specs.find((s) => s.id === state.documentId);
+  const fields = fitFields(state);
+  if (!spec || !fields) return null;
+
+  if ("purpose" in fields) {
+    return { spec, doc: buildNda(fields, catalog.ndaTerms), errors: validateNda(fields), fileName: (ext) => ndaFileName(fields, ext) };
   }
 
-  const generic = fields && "keyTerms" in fields ? fields : emptyGenericFields();
   return {
     spec,
-    doc: buildDocument(spec, generic, catalog.templates[spec.id]),
-    errors: validateDocument(spec, generic),
-    fileName: (ext) => documentFileName(spec.shortName, [generic.party1.company, generic.party2.company], ext),
+    doc: buildDocument(spec, fields, catalog.templates[spec.id]),
+    errors: validateDocument(spec, fields),
+    fileName: (ext) => documentFileName(spec.shortName, [fields.party1.company, fields.party2.company], ext),
   };
 }

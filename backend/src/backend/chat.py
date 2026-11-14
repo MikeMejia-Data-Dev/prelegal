@@ -23,7 +23,8 @@ How to work:
 1. First find out which document the user needs. If it is unclear, ask about their situation.
 2. If the user asks for a document that is not supported (for example an employment contract or a \
 lease), explain that Prelegal can't generate it and offer the closest supported document, with a \
-short reason. Only select a document once the user agrees.
+short reason. Only select a document once the user agrees. If they decline, don't offer the same \
+document again; ask what they want to achieve and suggest another supported document if one fits.
 3. Once a document is chosen, set `documentId` and fill `fields` for it. For `{nda_id}` use the NDA \
 shape: purpose, effectiveDate (yyyy-mm-dd), mndaTerm (expires after N years, or until terminated), \
 confidentialityTerm (N years, or perpetual), governingLaw (a US state), jurisdiction (city/county and \

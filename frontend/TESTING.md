@@ -40,8 +40,8 @@ Run `npm run dev` and open http://localhost:3000/create/ (or start the container
 
 | # | Steps | Expected |
 | --- | --- | --- |
-| M1 | Load the page | Effective Date is today; both download buttons disabled; list of 4 missing fields shown |
-| M2 | Tell the chat both company names, governing law and jurisdiction | AI confirms and asks about missing details; buttons enable; preview shows values without amber highlights |
+| M1 | Load the page | Chat greeting; list of the 11 supported agreements; no download buttons |
+| M2 | Ask for an NDA between two companies under Delaware law, courts in Wilmington | NDA preview with today's date; AI confirms and ends with a question; buttons enable; no amber highlights |
 | M3 | Ask the chat to make the MNDA continue until terminated, then go back to 2 years | Preview MNDA Term follows each change |
 | M4 | Ask the chat to change something it already recorded (e.g. the jurisdiction) | Only that value changes in the preview |
 | M5 | Download PDF | File `Mutual-NDA-<Party1>-<Party2>.pdf`; cover page on page 1; Standard Terms on following pages; links clickable; no hyphenation in legal text |
@@ -50,17 +50,14 @@ Run `npm run dev` and open http://localhost:3000/create/ (or start the container
 | M8 | Give accented and non-Latin names (`Société Générale`, `Łódź`, `Жуков`, `山田`) | Rendered correctly in preview, PDF and Word |
 | M9 | Enter a long unbroken notice address (60+ chars) | Wraps inside its cell in preview, PDF and Word; table columns keep their proportions |
 | M10 | Paste ~200 lines into Modifications | Nothing is cut off in the PDF |
-| M11 | Resize to phone width (390px) | No horizontal scroll; form above preview |
-| M12 | Keyboard only: Tab through the form, Space on radios, Enter on download | All controls reachable and operable; focus visible |
+| M11 | Resize to phone width (390px) | No horizontal scroll; chat above preview |
+| M12 | Keyboard only: type a message, press Enter, then Tab to a download button and press Enter | Focus returns to the message box after each reply; all controls reachable; focus visible |
+| M13 | Start over and ask for a cloud service agreement with a provider, customer and fees | Cloud Service Agreement preview with PROVIDER/CUSTOMER columns and nested clauses (1.1, …); AI asks for the remaining key terms; PDF and Word download once complete |
+| M14 | Ask for a residential lease | AI says it can't generate it, offers the closest supported agreement and asks a question; the agreement list stays |
+| M15 | Decline the offered alternative | AI doesn't offer it again and asks what you want to achieve |
 
 ### Manual test results
 
-**Initial run (2026-11-13, before fixes):** M1–M4, M6, M11, M12 passed. M5 (stray hyphen), M7 (preview and Word), M8 (PDF), M9 (preview and PDF) and M10 (PDF stopped at about line 86) failed. `/favicon.ico` returned 404.
-
-**After fixes (2026-11-13, production build via `next start`, Chrome on Linux, LibreOffice for DOCX):**
-
-| # | Result |
-| --- | --- |
-| M1–M12 | Pass |
-| M8 | Latin Extended, Greek and Cyrillic render in the PDF. CJK and emoji disable the PDF with a message listing the characters; Word renders them |
-| M5 | Typical cover page (up to about 3 Modification lines) fits on page 1 with the signature table and attribution kept together; longer cover pages move the signature block to page 2 intact |
+The results recorded on 2026-11-13 were for the PL-2 form UI, which the chat has replaced. This script
+has not yet been re-run by hand since PL-5. The automated e2e and live AI tests above cover M1, M2,
+M5, M6, M8, M9, M11–M14.

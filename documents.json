@@ -18,6 +18,7 @@
       "parties": ["Provider", "Customer"],
       "keyTerms": [
         { "key": "effectiveDate", "label": "Effective Date", "required": true },
+        { "key": "orderDate", "label": "Order Date", "description": "Date of the first Order Form, if different from the Effective Date", "required": false },
         { "key": "subscriptionPeriod", "label": "Subscription Period", "description": "Length of each subscription term, e.g. 1 year", "required": true },
         { "key": "fees", "label": "Fees", "description": "Subscription fees and payment terms", "required": true },
         { "key": "technicalSupport", "label": "Technical Support", "description": "Support the provider offers", "required": false },
@@ -40,7 +41,8 @@
         { "key": "targetResponseTime", "label": "Target Response Time", "description": "e.g. 4 business hours", "required": true },
         { "key": "responseTimeCredit", "label": "Response Time Credit", "description": "Credit when responses are late", "required": false },
         { "key": "supportChannel", "label": "Support Channel", "description": "Where support requests are sent", "required": true },
-        { "key": "scheduledDowntime", "label": "Scheduled Downtime", "description": "Planned maintenance windows", "required": false }
+        { "key": "scheduledDowntime", "label": "Scheduled Downtime", "description": "Planned maintenance windows", "required": false },
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "description": "Subscription term the SLA applies to", "required": false }
       ]
     },
     {

@@ -2,7 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 import type { DraftState } from "../src/lib/documents/chatApi";
 import { defaultFormData } from "../src/lib/nda/buildNda";
-import type { NdaFormData, Party } from "../src/lib/nda/types";
+import type { Party } from "../src/lib/documents/types";
+import type { NdaFormData } from "../src/lib/nda/types";
 
 export const coverPage = (page: Page) => page.getByRole("region", { name: "Cover Page" });
 

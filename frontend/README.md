@@ -55,7 +55,7 @@ See [`TESTING.md`](TESTING.md) for test coverage and the manual test script.
 
 ## License
 
-The application code is MIT licensed (see `../LICENSE`). The agreement text is the Common Paper Mutual
-NDA Version 1.0, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (see
+The application code is MIT licensed (see `../LICENSE`). The agreement text is from the Common Paper
+standard agreements, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (see
 `../templates/LICENSE.txt`). Generated documents include this attribution and note that the Cover Page
 was completed using Prelegal.

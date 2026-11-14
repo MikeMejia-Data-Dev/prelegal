@@ -303,14 +303,31 @@ describe("DocumentCreator with other agreements", () => {
     expect(doc.coverFields.find((f: { label: string }) => f.label === "Fees").value).toBe("Fees value");
   });
 
-  it("switches documents and falls back to defaults when the fields do not fit", async () => {
+  it("switches documents, keeping the parties when the AI returns the old document's fields", async () => {
     const user = userEvent.setup();
     render(<DocumentCreator catalog={catalog} />);
     await fillRequired(user);
     expect(pdfButton()).toBeEnabled();
     await say(user, "Actually, make it a cloud service agreement", (d) => ({ documentId: "csa", fields: d.fields }));
     expect(within(preview()).getByRole("heading", { level: 2 })).toHaveTextContent("Cloud Service Agreement");
+    expect(within(preview()).getByRole("row", { name: /Company/ })).toHaveTextContent("Acme, Inc.");
     expect(pdfButton()).toBeDisabled();
-    expect(screen.getByRole("status")).toHaveTextContent("Provider company is required.");
+    expect(screen.getByRole("status")).toHaveTextContent("Fees is required.");
+    expect(screen.getByRole("status")).not.toHaveTextContent("Provider company is required.");
+
+    await say(user, "Fees are $5 a month", () => ({ documentId: "csa", fields: null }));
+    const draft = sendChat.mock.calls[2][1];
+    expect(draft.fields.keyTerms).toEqual([]);
+    expect(draft.fields.party1.company).toBe("Acme, Inc.");
+  });
+
+  it("goes back to the document list if the AI drops the document", async () => {
+    const user = userEvent.setup();
+    render(<DocumentCreator catalog={catalog} />);
+    await say(user, "A cloud service agreement", csaWith(completeCsa));
+    await say(user, "Never mind", () => ({ documentId: null, fields: completeCsa }));
+    expect(screen.getByRole("region", { name: "Supported documents" })).toBeInTheDocument();
+    await say(user, "Hello again", () => ({ documentId: null, fields: null }));
+    expect(sendChat.mock.calls[2][1]).toEqual({ documentId: null, fields: null });
   });
 });

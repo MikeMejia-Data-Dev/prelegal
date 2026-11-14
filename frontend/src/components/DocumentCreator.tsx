@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import type { DocumentSpec } from "@/lib/documents/catalog";
 import type { DraftState } from "@/lib/documents/chatApi";
-import { draftDocument, type Catalog, type Draft } from "@/lib/documents/draft";
+import { draftDocument, fitFields, type Catalog, type Draft } from "@/lib/documents/draft";
 import { downloadDocument, type DownloadFormat } from "@/lib/export/download";
 import { unsupportedPdfCharactersInDocument } from "@/lib/export/pdfText";
 
@@ -20,10 +20,11 @@ const FORMATS: { format: DownloadFormat; label: string }[] = [
 export function DocumentCreator({ catalog }: { catalog: Catalog }) {
   const [draftState, setDraftState] = useState<DraftState>({ documentId: null, fields: null });
   const draft = useMemo(() => draftDocument(catalog, draftState), [catalog, draftState]);
+  const updateDraft = (next: DraftState) => setDraftState({ documentId: next.documentId, fields: fitFields(next) });
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
-      <DocumentChat draft={draftState} onDraftChange={setDraftState} />
+      <DocumentChat draft={draftState} onDraftChange={updateDraft} />
 
       <div className="space-y-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pb-6">
         {draft ? <DraftView key={draft.spec.id} draft={draft} /> : <DocumentList specs={catalog.specs} />}

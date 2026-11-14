@@ -1,24 +1,14 @@
-import { LICENSE_URL } from "@/lib/nda/buildNda";
-
-import { keyTermValue, type DocumentSpec, type GenericFields } from "./catalog";
+import { keyTermValue, type DocumentSpec, type GenericFields, type KeyTermSpec } from "./catalog";
+import { attribution, COVER_PAGE_NOTICE, partyRows } from "./coverPage";
 import type { Template } from "./parseTemplate";
-import type { CoverField, LegalDocument, Run } from "./types";
+import type { CoverField, LegalDocument } from "./types";
 
 const STANDARDS_URL = "https://commonpaper.com/standards";
 
-function coverField(spec: DocumentSpec["keyTerms"][number], fields: GenericFields): CoverField {
-  const value = keyTermValue(fields, spec.key);
-  if (value) return { label: spec.label, description: spec.description, value, missing: false };
-  if (spec.required) return { label: spec.label, description: spec.description, value: `[${spec.label}]`, missing: true };
-  return { label: spec.label, description: spec.description, value: "Not specified.", missing: false };
-}
-
-function attribution(spec: DocumentSpec, suffix: string): Run[] {
-  return [
-    { text: `Common Paper ${spec.name} free to use under ` },
-    { text: "CC BY 4.0", href: LICENSE_URL },
-    { text: suffix },
-  ];
+function keyTermField(term: KeyTermSpec, fields: GenericFields): CoverField {
+  const value = keyTermValue(fields, term.key);
+  const placeholder = term.required ? `[${term.label}]` : "Not specified.";
+  return { label: term.label, description: term.description, value: value || placeholder, missing: !value && term.required };
 }
 
 /**
@@ -26,7 +16,6 @@ function attribution(spec: DocumentSpec, suffix: string): Run[] {
  * and attach its unmodified Standard Terms.
  */
 export function buildDocument(spec: DocumentSpec, fields: GenericFields, template: Template): LegalDocument {
-  const { party1, party2 } = fields;
   return {
     title: spec.name,
     introHeading: `Using this ${spec.name}`,
@@ -41,24 +30,12 @@ export function buildDocument(spec: DocumentSpec, fields: GenericFields, templat
         text: ". Any modifications of the Standard Terms should be made on the Cover Page, which will control over conflicts with the Standard Terms.",
       },
     ],
-    coverFields: spec.keyTerms.map((term) => coverField(term, fields)),
+    coverFields: spec.keyTerms.map((term) => keyTermField(term, fields)),
     signingStatement: `By signing this Cover Page, each party agrees to enter into this ${spec.name}.`,
     partyLabels: [spec.parties[0].toUpperCase(), spec.parties[1].toUpperCase()],
-    partyRows: [
-      { label: "Signature", party1: "", party2: "", handwritten: true },
-      { label: "Print Name", party1: party1.name.trim(), party2: party2.name.trim() },
-      { label: "Title", party1: party1.title.trim(), party2: party2.title.trim() },
-      { label: "Company", party1: party1.company.trim(), party2: party2.company.trim() },
-      {
-        label: "Notice Address",
-        description: "Use either email or postal address",
-        party1: party1.noticeAddress.trim(),
-        party2: party2.noticeAddress.trim(),
-      },
-      { label: "Date", party1: "", party2: "", handwritten: true },
-    ],
-    coverAttribution: attribution(spec, ". Cover Page completed using Prelegal; Standard Terms unmodified."),
-    standardTerms: { title: "Standard Terms", clauses: template.clauses, attribution: attribution(spec, ".") },
+    partyRows: partyRows(fields.party1, fields.party2),
+    coverAttribution: attribution(spec.name, COVER_PAGE_NOTICE),
+    standardTerms: { title: "Standard Terms", clauses: template.clauses, attribution: attribution(spec.name, ".") },
   };
 }
 

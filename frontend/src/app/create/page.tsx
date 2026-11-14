@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { DocumentCreator } from "@/components/DocumentCreator";
 import { loadCatalog } from "@/lib/documents/loadCatalog";
-import { LICENSE_URL } from "@/lib/nda/buildNda";
+import { LICENSE_URL } from "@/lib/documents/coverPage";
 
 export const metadata: Metadata = { title: "Agreement Creator | Prelegal" };
 

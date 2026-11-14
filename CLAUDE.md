@@ -6,7 +6,7 @@ This is a SaaS product to allow users to draft legal agreements based on templat
 
 @catalog.json
 
-Current state: all 11 catalog agreements can be drafted through the AI chat. See Implementation Status below.
+Current state: all 11 agreements in the catalog (12 templates; the NDA has two) can be drafted through the AI chat. See Implementation Status below.
 
 # Development Procecss
 
@@ -63,7 +63,7 @@ scripts/stop-windows.sh
   - The multi-stage `Dockerfile` (Node build, then Python/uv runtime) runs on port 8000. The `scripts/*-{mac,linux,windows}.sh` wrappers call the shared `scripts/start.sh` / `stop.sh`.
   - Tests: `cd backend && uv run pytest`; `cd frontend && npm test`, `npm run test:e2e`. Set `E2E_BASE_URL=http://localhost:8000` to run the e2e tests against the container.
 - **PL-4** (done): AI chat for the Mutual NDA.
-  - `backend/src/backend/chat.py`: stateless `POST /api/chat` taking `{messages, fields}` and returning `{reply, fields}`. LiteLLM calls `openai/gpt-4.1-mini` with Structured Outputs. Pydantic models mirror `NdaFormData` in `frontend/src/lib/nda/types.ts`, so keep the two in sync.
+  - `backend/src/backend/chat.py`: stateless `POST /api/chat` (request and response shape extended in PL-5). LiteLLM calls `openai/gpt-4.1-mini` with Structured Outputs. Pydantic models mirror `NdaFormData` in `frontend/src/lib/nda/types.ts`, so keep the two in sync.
   - Frontend: the chat replaced the form. The AI returns the complete fields every turn, and the preview follows them. `next dev` proxies `/api` to `:8000`.
   - Tests mock the LLM. The live tests are the backend `test_live_llm_fills_fields` (needs `OPENAI_API_KEY`) and `E2E_LIVE=1 E2E_BASE_URL=http://localhost:8000 npx playwright test live-chat`.
 - **PL-5** (done): all catalog documents.

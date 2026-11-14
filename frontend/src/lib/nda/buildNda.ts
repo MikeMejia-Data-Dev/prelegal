@@ -1,15 +1,13 @@
+import { attribution, COVER_PAGE_NOTICE, emptyParty, partyRows } from "@/lib/documents/coverPage";
 import { documentFileName } from "@/lib/documents/fileName";
 import type { CoverField, LegalDocument, StandardTerms } from "@/lib/documents/types";
 
-import type { NdaFormData, Party } from "./types";
+import type { NdaFormData } from "./types";
 
 export const STANDARD_TERMS_URL = "https://commonpaper.com/standards/mutual-nda/1.0";
-export const LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/";
 
 const DEFAULT_PURPOSE =
   "Evaluating whether to enter into a business relationship with the other party.";
-
-const emptyParty = (): Party => ({ company: "", name: "", title: "", noticeAddress: "" });
 
 /** Today's date as yyyy-mm-dd in the user's local time zone. */
 export function todayIso(now: Date = new Date()): string {
@@ -51,7 +49,7 @@ const isValidYears = (years: number) => Number.isInteger(years) && years >= 1 &&
 const pluralYears = (years: number) => `${years} year${years === 1 ? "" : "s"}`;
 
 /** Human-readable list of problems that prevent the NDA from being completed. */
-export function validate(form: NdaFormData): string[] {
+export function validateNda(form: NdaFormData): string[] {
   const errors: string[] = [];
   if (!form.purpose.trim()) errors.push("Purpose is required.");
   if (!formatDate(form.effectiveDate)) errors.push("Effective Date must be a valid date.");
@@ -100,8 +98,6 @@ function confidentialityTermText(form: NdaFormData): string {
  * placeholders so the preview always renders.
  */
 export function buildNda(form: NdaFormData, standardTerms: StandardTerms): LegalDocument {
-  const { party1, party2 } = form;
-
   return {
     title: "Mutual Non-Disclosure Agreement",
     introHeading: "Using this Mutual Non-Disclosure Agreement",
@@ -136,25 +132,8 @@ export function buildNda(form: NdaFormData, standardTerms: StandardTerms): Legal
     signingStatement:
       "By signing this Cover Page, each party agrees to enter into this MNDA as of the Effective Date.",
     partyLabels: ["PARTY 1", "PARTY 2"],
-    partyRows: [
-      { label: "Signature", party1: "", party2: "", handwritten: true },
-      { label: "Print Name", party1: party1.name.trim(), party2: party2.name.trim() },
-      { label: "Title", party1: party1.title.trim(), party2: party2.title.trim() },
-      { label: "Company", party1: party1.company.trim(), party2: party2.company.trim() },
-      {
-        label: "Notice Address",
-        description: "Use either email or postal address",
-        party1: party1.noticeAddress.trim(),
-        party2: party2.noticeAddress.trim(),
-      },
-      { label: "Date", party1: "", party2: "", handwritten: true },
-    ],
-    coverAttribution: [
-      { text: "Common Paper Mutual Non-Disclosure Agreement (Version 1.0) free to use under " },
-      { text: "CC BY 4.0", href: LICENSE_URL },
-      // CC BY 4.0 requires indicating that the licensed material was modified.
-      { text: ". Cover Page completed using Prelegal; Standard Terms unmodified." },
-    ],
+    partyRows: partyRows(form.party1, form.party2),
+    coverAttribution: attribution("Mutual Non-Disclosure Agreement (Version 1.0)", COVER_PAGE_NOTICE),
     standardTerms,
   };
 }

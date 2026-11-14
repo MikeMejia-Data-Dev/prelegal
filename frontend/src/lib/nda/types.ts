@@ -1,7 +1,5 @@
 import type { Party } from "@/lib/documents/types";
 
-export type { Party };
-
 export type MndaTerm =
   | { kind: "expires"; years: number }
   | { kind: "untilTerminated" };
