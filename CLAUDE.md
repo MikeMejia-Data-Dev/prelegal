@@ -6,7 +6,7 @@ This is a SaaS product to allow users to draft legal agreements based on templat
 
 @catalog.json
 
-Current state: all 11 agreements in the catalog (12 templates; the NDA has two) can be drafted through the AI chat. See Implementation Status below.
+Current state: V1 is complete. Users sign up or sign in, draft any of the 11 agreements in the catalog (12 templates; the NDA has two) through the AI chat, download them as PDF or Word, and find them again under My documents. See Implementation Status below.
 
 # Development Procecss
 
@@ -56,7 +56,7 @@ scripts/stop-windows.sh
 
 # Implementation Status
 
-PL-1 to PL-5 are merged to `main` and marked Done in Jira. The Jira workflow has only To Do, In Progress and Done.
+All tickets (PL-1 to PL-6) are merged to `main` and marked Done in Jira. No tickets are open. The Jira workflow has only To Do, In Progress and Done.
 
 - **PL-1** (done): template dataset. Common Paper templates in `templates/` (copied unmodified) and `catalog.json`.
 - **PL-2** (done, PR #3 and #4): Mutual NDA creator. A live preview and PDF/Word download, generated client-side in `frontend/`. The original form was replaced by the chat in PL-4.
@@ -73,8 +73,14 @@ PL-1 to PL-5 are merged to `main` and marked Done in Jira. The Jira workflow has
   - `/api/chat` takes and returns `{documentId, fields}`. `fields` is `NdaFields` for `mutual-nda` and `GenericFields` (`keyTerms` list plus parties) for the rest. The AI returns a separate `question` that the backend appends to `reply`, so every turn ends with a follow-up. Unsupported requests get the closest supported document offered, and nothing is selected until the user agrees; a declined alternative is not offered again. A blank NDA `effectiveDate` from the AI defaults to today.
   - Frontend: `/create/` page lists the agreements until one is chosen. `lib/documents/` holds `parseTemplate`, `buildDocument`, `coverPage` (shared signature table and attribution), `draft` (`fitFields` keeps the parties when the document switches) and `loadCatalog`. The renderers in `lib/export/` take any `LegalDocument`. After each reply, focus returns to the message box.
   - Adding a document: add a template to `templates/` and `catalog.json`, plus an entry in `documents.json`. If the template uses the same Common Paper markdown format (nested numbered items, `*_link` spans), no code changes are needed.
-- **PL-6** (PR #8, awaiting merge): multiple users and polish.
+- **PL-6** (done, PR #8): multiple users and polish.
   - Backend: `auth.py` (sign up/in, salted scrypt password hashes, PyJWT HS256 bearer tokens signed with a random secret per start, so sessions end on restart like the DB; `CurrentUser` dependency) and `documents.py` (`/api/documents` save/list/get, scoped to the user). `/api/chat` requires sign-in. Tables: `users`, `documents` (fields stored as JSON).
-  - Frontend: `lib/auth.ts` (session in localStorage, `apiFetch` adds the Bearer header and sends a 401 back to sign in). Routes: `/` sign in, `/signup/`, and in the `(app)` group under `AppShell`: `/create/`, `/documents/`, `/document/?id=`. Downloading on `/create/` saves the draft state (`documentId` plus fields) to My documents, skipping unchanged re-downloads. Saved documents are rebuilt with the same builders and are view-only.
+  - Saving rejects fields that don't match the document type (NDA fields only for `mutual-nda`). A duplicate email returns 409 via the UNIQUE constraint.
+  - Frontend: `lib/auth.ts` (session in localStorage, `apiFetch` adds the Bearer header and sends a 401 back to sign in). `AppShell` reads the email from the stored session; a stale session is caught by the first API call. Routes: `/` sign in, `/signup/`, and in the `(app)` group under `AppShell`: `/create/`, `/documents/`, `/document/?id=`. Downloading on `/create/` saves the draft state (`documentId` plus fields) to My documents, skipping unchanged re-downloads. Saved documents are rebuilt with the same builders and are view-only.
   - `DRAFT_DISCLAIMER` (`lib/documents/coverPage.ts`) is shown in the UI and on every PDF and Word cover page.
+  - Shared UI pieces live in `components/ui.tsx` (button styles, page title, `ErrorBanner`, `Loading`). `lib/documents/buildCatalog.ts` parses the catalog for both `loadCatalog` (build time) and tests (`src/test/catalog.ts`).
   - Tests: `e2e/accounts.spec.ts` uses the real backend with only `/api/chat` mocked (`E2E_BASE_URL` required).
+
+Known limits and possible follow-ups:
+- The database and sessions reset on every restart by design. Persisting them would need a mounted volume and a fixed JWT secret (`auth.SECRET`). The per-start secret also assumes a single uvicorn worker.
+- The manual test script (M1–M19 in `frontend/TESTING.md`) has not been run by hand since PL-5. The automated tests cover most of it.
