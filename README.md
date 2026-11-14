@@ -30,8 +30,10 @@ Business Associate, Software License and Pilot Agreements, and the AI Addendum.
 - A live preview of the full agreement that updates as the chat goes, with missing required fields highlighted.
 - Download as PDF or Word (.docx). Both files contain the Standard Terms word for word.
 - Chat messages are sent to the backend, which calls OpenAI (`gpt-4.1-mini`, Structured Outputs) with
-  `OPENAI_API_KEY` from `.env`. Nothing is stored. The PDF and Word files are generated in the browser.
-- A placeholder sign-in screen leads into the app. There is no authentication yet.
+  `OPENAI_API_KEY` from `.env`. The PDF and Word files are generated in the browser.
+- Accounts: sign up and sign in with email and password (JWT bearer tokens). Every document you
+  download is saved to **My documents**, where you can open it again and re-download it.
+- Every document is marked as a draft that is subject to legal review, on screen and in the PDF and Word files.
 
 ## Repository layout
 
@@ -41,7 +43,7 @@ Business Associate, Software License and Pilot Agreements, and the AI Addendum.
 | `catalog.json` | A list of the templates with a short description of each |
 | `documents.json` | Each supported agreement's party roles and Cover Page key terms, used by the chat and the documents |
 | `frontend/` | The web app (Next.js, React, TypeScript, Tailwind), built as static files |
-| `backend/` | FastAPI app (uv project): `/api/chat` (AI), `/api/health`, and the static frontend |
+| `backend/` | FastAPI app (uv project): sign up/in (`/api/auth/*`, `/api/me`), saved documents (`/api/documents`), the AI chat (`/api/chat`, signed-in users only), `/api/health`, and the static frontend |
 | `scripts/` | Start and stop scripts for Mac, Linux and Windows (Git Bash) |
 | `Dockerfile` | Builds the frontend and backend into one container |
 
@@ -54,7 +56,8 @@ scripts/start-linux.sh   # or start-mac.sh / start-windows.sh -> http://localhos
 scripts/stop-linux.sh    # or stop-mac.sh / stop-windows.sh
 ```
 
-The SQLite database (`users` table) is recreated from scratch every time the container starts.
+The SQLite database (users and saved documents) is temporary: it is recreated from scratch every time
+the container starts, so accounts and saved documents are reset.
 Settings such as API keys go in `.env` at the repository root.
 
 ### Local development

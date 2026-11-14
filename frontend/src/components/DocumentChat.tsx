@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { sendChat, type ChatMessage, type DraftState } from "@/lib/documents/chatApi";
 
+import { buttonClass } from "./ui";
+
 const GREETING: ChatMessage = {
   role: "assistant",
   content:
@@ -49,7 +51,7 @@ export function DocumentChat({ draft, onDraftChange }: { draft: DraftState; onDr
   return (
     <section
       aria-label="Chat"
-      className="flex h-[32rem] flex-col rounded-lg border border-slate-200 bg-white lg:h-[calc(100vh-3rem)] lg:sticky lg:top-6"
+      className="flex h-[32rem] flex-col rounded-lg border border-slate-200 bg-white lg:h-[calc(100vh-7rem)] lg:sticky lg:top-24"
     >
       <div ref={logRef} role="log" aria-label="Conversation" className="flex-1 overflow-y-auto p-4">
         <ol className="space-y-3">
@@ -88,7 +90,7 @@ export function DocumentChat({ draft, onDraftChange }: { draft: DraftState; onDr
         <button
           type="submit"
           disabled={busy || !input.trim()}
-          className="rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className={buttonClass.submit}
         >
           Send
         </button>

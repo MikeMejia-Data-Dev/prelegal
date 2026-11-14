@@ -104,7 +104,7 @@ test("PDF is blocked with an explanation for characters the font lacks; Word sti
   await fillRequired(page);
   await say(page, "Signer is 山田", setParty(2, { name: "山田" }));
   await expect(page.getByRole("button", { name: "Download PDF" })).toBeDisabled();
-  await expect(page.getByRole("note")).toContainText("The PDF can't display these characters: 山 田");
+  await expect(page.getByText(/The PDF can.t display these characters/)).toContainText("山 田");
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", { name: "Download Word" }).click(),

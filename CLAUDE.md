@@ -56,13 +56,12 @@ scripts/stop-windows.sh
 
 # Implementation Status
 
-All tickets below are merged to `main` and marked Done in Jira. The Jira workflow has only To Do, In Progress and Done.
+PL-1 to PL-5 are merged to `main` and marked Done in Jira. The Jira workflow has only To Do, In Progress and Done.
 
 - **PL-1** (done): template dataset. Common Paper templates in `templates/` (copied unmodified) and `catalog.json`.
 - **PL-2** (done, PR #3 and #4): Mutual NDA creator. A live preview and PDF/Word download, generated client-side in `frontend/`. The original form was replaced by the chat in PL-4.
 - **PL-3** (done, PR #5): V1 foundation.
-  - `backend/src/backend/`: `main.py` (FastAPI, `/api/health`, mounts the static frontend at `/`) and `db.py` (SQLite `users` table recreated on startup; no sign up/sign in endpoints yet).
-  - Frontend: fake sign-in at `/` (no auth) leads to the creator (now at `/create/`).
+  - `backend/src/backend/`: `main.py` (FastAPI, `/api/health`, mounts the static frontend at `/`) and `db.py` (SQLite database recreated on startup).
   - The multi-stage `Dockerfile` (Node build, then Python/uv runtime) runs on port 8000. The `scripts/*-{mac,linux,windows}.sh` wrappers call the shared `scripts/start.sh` / `stop.sh`.
   - Tests: `cd backend && uv run pytest`; `cd frontend && npm test`, `npm run test:e2e`. Set `E2E_BASE_URL=http://localhost:8000` to run the e2e tests against the container.
 - **PL-4** (done, PR #6): AI chat for the Mutual NDA.
@@ -74,4 +73,8 @@ All tickets below are merged to `main` and marked Done in Jira. The Jira workflo
   - `/api/chat` takes and returns `{documentId, fields}`. `fields` is `NdaFields` for `mutual-nda` and `GenericFields` (`keyTerms` list plus parties) for the rest. The AI returns a separate `question` that the backend appends to `reply`, so every turn ends with a follow-up. Unsupported requests get the closest supported document offered, and nothing is selected until the user agrees; a declined alternative is not offered again. A blank NDA `effectiveDate` from the AI defaults to today.
   - Frontend: `/create/` page lists the agreements until one is chosen. `lib/documents/` holds `parseTemplate`, `buildDocument`, `coverPage` (shared signature table and attribution), `draft` (`fitFields` keeps the parties when the document switches) and `loadCatalog`. The renderers in `lib/export/` take any `LegalDocument`. After each reply, focus returns to the message box.
   - Adding a document: add a template to `templates/` and `catalog.json`, plus an entry in `documents.json`. If the template uses the same Common Paper markdown format (nested numbered items, `*_link` spans), no code changes are needed.
-- **Next: PL-6** (To Do): support multiple users and final polish. Not built yet: real sign up/sign in (the `users` table exists, but there are no endpoints or UI) and storing users' conversations and documents.
+- **PL-6** (PR #8, awaiting merge): multiple users and polish.
+  - Backend: `auth.py` (sign up/in, salted scrypt password hashes, PyJWT HS256 bearer tokens signed with a random secret per start, so sessions end on restart like the DB; `CurrentUser` dependency) and `documents.py` (`/api/documents` save/list/get, scoped to the user). `/api/chat` requires sign-in. Tables: `users`, `documents` (fields stored as JSON).
+  - Frontend: `lib/auth.ts` (session in localStorage, `apiFetch` adds the Bearer header and sends a 401 back to sign in). Routes: `/` sign in, `/signup/`, and in the `(app)` group under `AppShell`: `/create/`, `/documents/`, `/document/?id=`. Downloading on `/create/` saves the draft state (`documentId` plus fields) to My documents, skipping unchanged re-downloads. Saved documents are rebuilt with the same builders and are view-only.
+  - `DRAFT_DISCLAIMER` (`lib/documents/coverPage.ts`) is shown in the UI and on every PDF and Word cover page.
+  - Tests: `e2e/accounts.spec.ts` uses the real backend with only `/api/chat` mocked (`E2E_BASE_URL` required).

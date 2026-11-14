@@ -1,38 +1,27 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { NDA_ID, type DocumentSpec, type GenericFields } from "@/lib/documents/catalog";
+import { NDA_ID, type GenericFields } from "@/lib/documents/catalog";
 import type { ChatMessage, DraftState } from "@/lib/documents/chatApi";
-import type { Catalog } from "@/lib/documents/draft";
-import { parseTemplate } from "@/lib/documents/parseTemplate";
 import { defaultFormData, formatDate, todayIso } from "@/lib/nda/buildNda";
-import { parseStandardTerms } from "@/lib/nda/parseStandardTerms";
 import type { NdaFormData } from "@/lib/nda/types";
+import { testCatalog } from "@/test/catalog";
 
 const downloadDocument = vi.fn();
 vi.mock("@/lib/export/download", () => ({ downloadDocument: (...args: unknown[]) => downloadDocument(...args) }));
 const sendChat = vi.fn();
 vi.mock("@/lib/documents/chatApi", () => ({ sendChat: (...args: unknown[]) => sendChat(...args) }));
+const saveDocument = vi.fn();
+vi.mock("@/lib/documents/savedApi", () => ({ saveDocument: (...args: unknown[]) => saveDocument(...args) }));
 
 import { DocumentCreator } from "./DocumentCreator";
 
-const ROOT = path.resolve(__dirname, "../../..");
-const read = (file: string) => readFileSync(path.join(ROOT, file), "utf8");
-const specs: DocumentSpec[] = JSON.parse(read("documents.json")).documents;
-const catalog: Catalog = {
-  specs,
-  ndaTerms: parseStandardTerms(read("templates/Mutual-NDA.md")),
-  templates: Object.fromEntries(
-    specs.filter((s) => s.id !== NDA_ID).map((s) => [s.id, parseTemplate(read(`templates/${s.template}`))]),
-  ),
-};
-const csa = specs.find((s) => s.id === "csa")!;
+const catalog = testCatalog;
+const csa = catalog.specs.find((s) => s.id === "csa")!;
 
 const preview = () => screen.getByRole("region", { name: "Cover Page" });
 const coverValue = (label: string) => {
@@ -93,6 +82,8 @@ beforeEach(() => {
   downloadDocument.mockReset();
   downloadDocument.mockResolvedValue(undefined);
   sendChat.mockReset();
+  saveDocument.mockReset();
+  saveDocument.mockResolvedValue({ id: 1 });
 });
 afterEach(cleanup);
 
@@ -273,7 +264,58 @@ describe("DocumentCreator with the Mutual NDA", () => {
     await say(user, "Signer 山田", nda((f) => ({ ...f, party2: { ...f.party2, name: "山田 → ok" } })));
     expect(pdfButton()).toBeDisabled();
     expect(wordButton()).toBeEnabled();
-    expect(screen.getByRole("note")).toHaveTextContent("The PDF can't display these characters: 山 田 →");
+    expect(screen.getByText(/The PDF can.t display these characters/)).toHaveTextContent("山 田 →");
+  });
+});
+
+describe("DocumentCreator saving to My documents", () => {
+  it("shows the draft disclaimer next to the preview", async () => {
+    const user = userEvent.setup();
+    render(<DocumentCreator catalog={catalog} />);
+    await say(user, "An NDA please", nda());
+    expect(screen.getByRole("note", { name: "Disclaimer" })).toHaveTextContent(/draft.*subject to review by a qualified lawyer/);
+    expect(preview()).toHaveTextContent(/subject to review by a qualified lawyer/);
+  });
+
+  it("saves the document when it is downloaded, once per version", async () => {
+    const user = userEvent.setup();
+    render(<DocumentCreator catalog={catalog} />);
+    await fillRequired(user);
+    await user.click(pdfButton());
+    expect(await screen.findByText(/Saved to/)).toHaveTextContent("Saved to My documents.");
+    const [documentId, title, fields] = saveDocument.mock.calls[0];
+    expect([documentId, title]).toEqual([NDA_ID, "Mutual Non-Disclosure Agreement · Acme, Inc. & Globex"]);
+    expect(fields.governingLaw).toBe("Delaware");
+
+    await user.click(wordButton());
+    await waitFor(() => expect(wordButton()).toBeEnabled());
+    expect(saveDocument).toHaveBeenCalledTimes(1);
+
+    await say(user, "Jurisdiction is Wilmington", nda((f) => ({ ...f, jurisdiction: "Wilmington, DE" })));
+    await user.click(wordButton());
+    await waitFor(() => expect(saveDocument).toHaveBeenCalledTimes(2));
+  });
+
+  it("does not save when the download fails", async () => {
+    downloadDocument.mockRejectedValue(new Error("boom"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const user = userEvent.setup();
+    render(<DocumentCreator catalog={catalog} />);
+    await fillRequired(user);
+    await user.click(pdfButton());
+    await screen.findByText(/Something went wrong while generating/);
+    expect(saveDocument).not.toHaveBeenCalled();
+  });
+
+  it("says so when the download worked but saving failed", async () => {
+    saveDocument.mockRejectedValue(new Error("down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const user = userEvent.setup();
+    render(<DocumentCreator catalog={catalog} />);
+    await fillRequired(user);
+    await user.click(pdfButton());
+    expect(await screen.findByText(/couldn't be saved to My documents/)).toBeInTheDocument();
+    expect(downloadDocument).toHaveBeenCalledTimes(1);
   });
 });
 

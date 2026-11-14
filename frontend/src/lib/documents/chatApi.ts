@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/auth";
 import type { NdaFormData } from "@/lib/nda/types";
 
 import type { GenericFields } from "./catalog";
@@ -19,11 +20,7 @@ export interface ChatReply extends DraftState {
 
 /** Send the conversation and current draft to the backend AI; returns its reply and the updated draft. */
 export async function sendChat(messages: ChatMessage[], draft: DraftState): Promise<ChatReply> {
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, ...draft }),
-  });
+  const response = await apiFetch("/api/chat", { method: "POST", body: JSON.stringify({ messages, ...draft }) });
   if (!response.ok) throw new Error(`Chat request failed: ${response.status}`);
   return response.json();
 }

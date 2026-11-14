@@ -17,6 +17,7 @@ export interface Catalog {
 /** A filled-in document ready to preview and download. */
 export interface Draft {
   spec: DocumentSpec;
+  fields: NonNullable<DraftState["fields"]>;
   doc: LegalDocument;
   errors: string[];
   fileName: (extension: "pdf" | "docx") => string;
@@ -41,13 +42,27 @@ export function draftDocument(catalog: Catalog, state: DraftState): Draft | null
   if (!spec || !fields) return null;
 
   if ("purpose" in fields) {
-    return { spec, doc: buildNda(fields, catalog.ndaTerms), errors: validateNda(fields), fileName: (ext) => ndaFileName(fields, ext) };
+    return {
+      spec,
+      fields,
+      doc: buildNda(fields, catalog.ndaTerms),
+      errors: validateNda(fields),
+      fileName: (ext) => ndaFileName(fields, ext),
+    };
   }
 
   return {
     spec,
+    fields,
     doc: buildDocument(spec, fields, catalog.templates[spec.id]),
     errors: validateDocument(spec, fields),
     fileName: (ext) => documentFileName(spec.shortName, [fields.party1.company, fields.party2.company], ext),
   };
+}
+
+/** Title for "My documents", e.g. "Cloud Service Agreement · Acme, Inc. & Globex". */
+export function documentTitle({ spec, doc }: Draft): string {
+  const companies = doc.partyRows.find((row) => row.label === "Company")!;
+  const parties = [companies.party1, companies.party2].filter(Boolean).join(" & ");
+  return parties ? `${spec.name} · ${parties}` : spec.name;
 }

@@ -31,8 +31,12 @@ See [`TESTING.md`](TESTING.md) for test coverage and the manual test script.
 
 ## How it works
 
-- `src/app/page.tsx` is a fake sign-in screen (no authentication yet) that leads to `/create/`.
-- `src/app/create/page.tsx` is a server component. At build time `src/lib/documents/loadCatalog.ts`
+- `src/app/page.tsx` (sign in) and `src/app/signup/page.tsx` use `src/components/AuthForm.tsx`.
+  `src/lib/auth.ts` keeps the session token in localStorage and sends it with every API call; a 401
+  sends the user back to sign in.
+- Pages in `src/app/(app)/` are wrapped in `src/components/AppShell.tsx` (header, navigation, footer,
+  sign-in guard): `/create/`, `/documents/` (My documents) and `/document/?id=` (a saved document).
+- `src/app/(app)/create/page.tsx` is a server component. At build time `src/lib/documents/loadCatalog.ts`
   reads `../documents.json` and every template in `../templates/`. **Run the app from `frontend/`
   inside the full repository** so that these paths resolve.
 - `src/components/DocumentChat.tsx` sends the conversation and the current draft (`documentId` and
@@ -40,6 +44,8 @@ See [`TESTING.md`](TESTING.md) for test coverage and the manual test script.
 - `src/lib/documents/draft.ts` turns the draft into a `LegalDocument`: the Mutual NDA keeps its typed
   fields and builder (`src/lib/nda/`); every other agreement uses `buildDocument.ts` with the key
   terms from `documents.json` and the nested clauses parsed by `parseTemplate.ts`.
+- `src/components/DraftView.tsx` shows the downloads, the draft disclaimer and the preview. On
+  `/create/` each download also saves the document to My documents (`src/lib/documents/savedApi.ts`).
 - The preview (`src/components/DocumentPreview.tsx`), the PDF (`src/lib/export/DocumentPdf.tsx`,
   `@react-pdf/renderer`) and the Word file (`src/lib/export/documentDocx.ts`, `docx`) all render
   that same model.
