@@ -32,7 +32,7 @@ These bugs were found by the review and the tests below, and are now fixed. Each
 
 ## Manual test script
 
-Run `npm run dev` and open http://localhost:3000. Repeat the downloads in at least one of Word / LibreOffice and one PDF viewer (Acrobat, Preview, Chrome).
+Run `npm run dev` and open http://localhost:3000/nda/ (or start the container and open http://localhost:8000). Repeat the downloads in at least one of Word / LibreOffice and one PDF viewer (Acrobat, Preview, Chrome).
 
 | # | Steps | Expected |
 | --- | --- | --- |

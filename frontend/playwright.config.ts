@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3100;
+// Set E2E_BASE_URL (e.g. http://localhost:8000) to test a running container instead of `next dev`.
+const BASE_URL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
 /**
  * End-to-end tests against the real Next.js app in a real browser.
@@ -14,17 +16,19 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: "list",
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: BASE_URL,
     trace: "retain-on-failure",
   },
   projects: [
     { name: "desktop-chrome", use: { ...devices["Desktop Chrome"], channel: "chrome" } },
     { name: "mobile-chrome", use: { ...devices["Pixel 7"], channel: "chrome" } },
   ],
-  webServer: {
-    command: `npx next dev --port ${PORT}`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : {
+        command: `npx next dev --port ${PORT}`,
+        url: BASE_URL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
 });
