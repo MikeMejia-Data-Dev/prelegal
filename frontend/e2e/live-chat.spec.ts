@@ -1,5 +1,14 @@
 import { expect, test } from "@playwright/test";
 
+// Signs up for real so the AI calls are authenticated.
+test.beforeEach(async ({ page }) => {
+  await page.goto("/signup/");
+  await page.getByLabel("Email").fill(`live-${Date.now()}-${Math.random()}@example.com`);
+  await page.getByLabel("Password").fill("correct horse battery");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByRole("heading", { name: "New document" }).waitFor();
+});
+
 // Talks to the real AI. Run against the container:
 // E2E_LIVE=1 E2E_BASE_URL=http://localhost:8000 npx playwright test live-chat
 test.skip(!process.env.E2E_LIVE, "set E2E_LIVE=1 to call the real AI");

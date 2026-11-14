@@ -6,6 +6,7 @@ import {
   HeadingLevel,
   Packer,
   PageBreak,
+  ShadingType,
   Paragraph,
   Table,
   TableCell,
@@ -15,6 +16,7 @@ import {
   type ParagraphChild,
 } from "docx";
 
+import { DRAFT_DISCLAIMER } from "@/lib/documents/coverPage";
 import type { LegalDocument, Run } from "@/lib/documents/types";
 
 const FONT = "Calibri";
@@ -91,6 +93,12 @@ function partyTable(doc: LegalDocument): Table {
 export async function documentToDocxBlob(doc: LegalDocument): Promise<Blob> {
   const coverPage: (Paragraph | Table)[] = [
     new Paragraph({ text: doc.title, heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
+    new Paragraph({
+      shading: { type: ShadingType.CLEAR, fill: "FFFBEB" },
+      border: { left: { style: BorderStyle.SINGLE, size: 18, color: "F59E0B", space: 6 } },
+      children: [new TextRun({ text: DRAFT_DISCLAIMER, size: 17, color: "78350F" })],
+      spacing: { after: 160 },
+    }),
     new Paragraph({ text: doc.introHeading.toUpperCase(), heading: HeadingLevel.HEADING_2 }),
     new Paragraph({ children: runs(doc.intro), spacing: { after: 160 } }),
     ...doc.coverFields.flatMap((field) => [

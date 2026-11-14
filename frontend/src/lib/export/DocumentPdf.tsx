@@ -1,6 +1,7 @@
 import { Document, Font, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { ComponentProps, ReactNode } from "react";
 
+import { DRAFT_DISCLAIMER } from "@/lib/documents/coverPage";
 import type { LegalDocument, Run } from "@/lib/documents/types";
 import { breakLongTokens } from "./pdfText";
 
@@ -54,8 +55,18 @@ function P({ children, ...props }: PProps) {
 const PARTY_CELL_CHARS = 26;
 
 const styles = StyleSheet.create({
-  page: { paddingVertical: 36, paddingHorizontal: 60, fontFamily: FONT, fontSize: 10, lineHeight: 1.3 },
+  page: { paddingVertical: 30, paddingHorizontal: 60, fontFamily: FONT, fontSize: 10, lineHeight: 1.3 },
   title: { fontWeight: "bold", fontSize: 17, textAlign: "center", marginBottom: 6 },
+  disclaimer: {
+    fontSize: 8,
+    lineHeight: 1.2,
+    color: "#78350f",
+    backgroundColor: "#fffbeb",
+    borderLeftWidth: 3,
+    borderLeftColor: "#f59e0b",
+    padding: 4,
+    marginBottom: 4,
+  },
   heading: { fontWeight: "bold", fontSize: 11, marginTop: 6, marginBottom: 4 },
   paragraph: { marginBottom: 8, textAlign: "justify" },
   fieldLabel: { fontWeight: "bold", fontSize: 10.5, marginTop: 4 },
@@ -67,7 +78,7 @@ const styles = StyleSheet.create({
   table: { borderWidth: 1, borderColor: "#9ca3af", marginTop: 4, marginBottom: 4 },
   row: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#9ca3af", minHeight: 22 },
   lastRow: { flexDirection: "row", minHeight: 22 },
-  handwrittenRow: { minHeight: 44 },
+  handwrittenRow: { minHeight: 36 },
   labelCell: { width: "26%", padding: 5, borderRightWidth: 1, borderRightColor: "#9ca3af" },
   partyCell: { width: "37%", padding: 5 },
   partyCellDivider: { borderRightWidth: 1, borderRightColor: "#9ca3af" },
@@ -99,6 +110,7 @@ export function DocumentPdf({ doc }: { doc: LegalDocument }) {
     <Document title={doc.title} creator="Prelegal" producer="Prelegal">
       <Page size="LETTER" style={styles.page}>
         <P style={styles.title}>{doc.title}</P>
+        <P style={styles.disclaimer}>{DRAFT_DISCLAIMER}</P>
         <P style={styles.heading}>{doc.introHeading.toUpperCase()}</P>
         <P style={styles.paragraph}>
           <Runs runs={doc.intro} />

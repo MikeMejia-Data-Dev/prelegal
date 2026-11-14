@@ -49,7 +49,7 @@ export function DocumentChat({ draft, onDraftChange }: { draft: DraftState; onDr
   return (
     <section
       aria-label="Chat"
-      className="flex h-[32rem] flex-col rounded-lg border border-slate-200 bg-white lg:h-[calc(100vh-3rem)] lg:sticky lg:top-6"
+      className="flex h-[32rem] flex-col rounded-lg border border-slate-200 bg-white lg:h-[calc(100vh-7rem)] lg:sticky lg:top-24"
     >
       <div ref={logRef} role="log" aria-label="Conversation" className="flex-1 overflow-y-auto p-4">
         <ol className="space-y-3">

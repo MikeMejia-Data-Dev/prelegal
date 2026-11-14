@@ -18,7 +18,11 @@
 - **`lib/documents/*.test.ts`**: every template parses into nested clauses with no markup left; `documents.json` covers the whole catalog; generic cover page, placeholders, validation and file names.
 - **`components/DocumentCreator.test.tsx`**: chat with a mocked `/api/chat` (draft sent each turn, reply shown, focus returns to the message box, waiting state, error handling), document list before a choice, NDA and Cloud Service Agreement previews, switching documents, required-field gating of downloads, busy state, HTML escaping.
 - **`e2e/nda.spec.ts`, `e2e/documents.spec.ts`**: real page load with no console errors (hydration), chat driven through a mocked `/api/chat`, real PDF and Word downloads for the NDA and a Cloud Service Agreement, responsive layout, keyboard use and focus.
+- **`components/accounts.test.tsx`**: auth library (session storage, token header, 401 handling), sign in and sign up forms, the app shell's sign-in guard and sign out, My documents and the saved document view.
+- **`e2e/login.spec.ts`**: sign up, wrong password, sign-in guard, sign out (API mocked).
+- **`e2e/accounts.spec.ts`** (needs `E2E_BASE_URL`, real backend, AI mocked): sign up, download to save, find the document again after signing back in, users can't see each other's documents, duplicate email.
 - **`e2e/live-chat.spec.ts`**: opt-in conversations with the real AI.
+- **`backend/tests/test_auth.py`, `test_documents.py`**: password hashing, sign up/in, JWT validation and expiry, accounts reset on restart, saving/listing/opening documents, per-user isolation.
 - **`backend/tests/test_chat.py`**: catalog prompt, Structured Outputs call (NDA and generic fields), the appended follow-up question, `/api/chat` validation, and live OpenAI tests (skipped without `OPENAI_API_KEY`).
 
 ### Regression tests for fixed bugs
@@ -36,7 +40,7 @@ These bugs were found by the review and the tests below, and are now fixed. Each
 
 ## Manual test script
 
-Run `npm run dev` and open http://localhost:3000/create/ (or start the container and open http://localhost:8000). Repeat the downloads in at least one of Word / LibreOffice and one PDF viewer (Acrobat, Preview, Chrome).
+Start the container and open http://localhost:8000, then create an account. Repeat the downloads in at least one of Word / LibreOffice and one PDF viewer (Acrobat, Preview, Chrome).
 
 | # | Steps | Expected |
 | --- | --- | --- |
@@ -55,9 +59,13 @@ Run `npm run dev` and open http://localhost:3000/create/ (or start the container
 | M13 | Start over and ask for a cloud service agreement with a provider, customer and fees | Cloud Service Agreement preview with PROVIDER/CUSTOMER columns and nested clauses (1.1, …); AI asks for the remaining key terms; PDF and Word download once complete |
 | M14 | Ask for a residential lease | AI says it can't generate it, offers the closest supported agreement and asks a question; the agreement list stays |
 | M15 | Decline the offered alternative | AI doesn't offer it again and asks what you want to achieve |
+| M16 | Download a document, then open My documents | It is listed with its title and date; opening it shows the preview and downloads work |
+| M17 | Sign out, sign back in | My documents still lists it; a second account does not see it |
+| M18 | Restart the container | Signed out; the old account and its documents are gone |
+| M19 | Check the preview, PDF and Word file | Each shows the "draft, subject to legal review" disclaimer |
 
 ### Manual test results
 
 The results recorded on 2026-11-13 were for the PL-2 form UI, which the chat has replaced. This script
 has not yet been re-run by hand since PL-5. The automated e2e and live AI tests above cover M1, M2,
-M5, M6, M8, M9, M11–M14.
+M5, M6, M8, M9, M11–M14, M16, M17 and M19.

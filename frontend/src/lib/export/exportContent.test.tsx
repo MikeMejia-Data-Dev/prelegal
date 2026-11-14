@@ -13,6 +13,7 @@ import { buildNda, defaultFormData } from "@/lib/nda/buildNda";
 import { parseStandardTerms } from "@/lib/nda/parseStandardTerms";
 import { buildDocument } from "@/lib/documents/buildDocument";
 import { NDA_ID, type DocumentSpec, type GenericFields } from "@/lib/documents/catalog";
+import { DRAFT_DISCLAIMER } from "@/lib/documents/coverPage";
 import { parseTemplate } from "@/lib/documents/parseTemplate";
 import type { LegalDocument } from "@/lib/documents/types";
 import type { NdaFormData } from "@/lib/nda/types";
@@ -74,6 +75,13 @@ async function pdfPages(nda: LegalDocument): Promise<string[]> {
 }
 
 const nda = makeNda();
+
+describe("draft disclaimer", () => {
+  it("is on the cover page of the Word file and the PDF", async () => {
+    expect(squash(await docxText(nda))).toContain(squash(DRAFT_DISCLAIMER));
+    expect(squash((await pdfPages(nda))[0])).toContain(squash(DRAFT_DISCLAIMER));
+  });
+});
 
 describe("DOCX content", () => {
   it("contains every cover field label and value", async () => {
