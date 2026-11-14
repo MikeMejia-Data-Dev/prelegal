@@ -4,12 +4,10 @@ from datetime import date
 from types import SimpleNamespace
 
 import pytest
-from fastapi.testclient import TestClient
 
 from backend import chat
 from backend.catalog import DOCUMENT_IDS, catalog_text
 from backend.chat import ChatRequest, GenericFields, NdaFields, build_messages, run_chat
-from backend.main import app
 
 EMPTY_PARTY = {"company": "", "name": "", "title": "", "noticeAddress": ""}
 
@@ -96,32 +94,33 @@ def test_run_chat_defaults_a_blank_nda_date_to_today(monkeypatch):
     assert run_chat(ask("NDA")).fields.effectiveDate == date.today().isoformat()
 
 
-def test_chat_endpoint(monkeypatch):
+def test_chat_endpoint(monkeypatch, signed_in):
     turn = {"reply": "Hello!", "question": "Which document do you need?", "documentId": None, "fields": None}
     monkeypatch.setattr(chat, "completion", fake_completion(turn))
-    with TestClient(app) as client:
-        response = client.post("/api/chat", json={"messages": [], "documentId": None, "fields": None})
+    response = signed_in.post("/api/chat", json={"messages": [], "documentId": None, "fields": None})
     assert response.status_code == 200
     assert response.json() == {"reply": "Hello! Which document do you need?", "documentId": None, "fields": None}
 
 
-def test_chat_endpoint_round_trips_generic_fields(monkeypatch):
+def test_chat_endpoint_round_trips_generic_fields(monkeypatch, signed_in):
     turn = {"reply": "Noted.", "question": "What else?", "documentId": "csa", "fields": GENERIC}
     monkeypatch.setattr(chat, "completion", fake_completion(turn))
-    with TestClient(app) as client:
-        response = client.post("/api/chat", json={"messages": [], "documentId": "csa", "fields": GENERIC})
+    response = signed_in.post("/api/chat", json={"messages": [], "documentId": "csa", "fields": GENERIC})
     assert response.json() == {"reply": "Noted. What else?", "documentId": "csa", "fields": GENERIC}
 
 
-def test_chat_endpoint_rejects_unknown_document():
-    with TestClient(app) as client:
-        response = client.post("/api/chat", json={"messages": [], "documentId": "lease", "fields": None})
+def test_chat_endpoint_requires_sign_in(client):
+    response = client.post("/api/chat", json={"messages": [], "documentId": None, "fields": None})
+    assert response.status_code == 401
+
+
+def test_chat_endpoint_rejects_unknown_document(signed_in):
+    response = signed_in.post("/api/chat", json={"messages": [], "documentId": "lease", "fields": None})
     assert response.status_code == 422
 
 
-def test_chat_endpoint_rejects_bad_fields():
-    with TestClient(app) as client:
-        response = client.post("/api/chat", json={"messages": [], "documentId": None, "fields": {"purpose": "x"}})
+def test_chat_endpoint_rejects_bad_fields(signed_in):
+    response = signed_in.post("/api/chat", json={"messages": [], "documentId": None, "fields": {"purpose": "x"}})
     assert response.status_code == 422
 
 
