@@ -15,18 +15,18 @@ function saveBlob(blob: Blob, fileName: string) {
 }
 
 /**
- * Generate the NDA in the browser and save it. The PDF and DOCX libraries
+ * Generate the agreement in the browser and save it. The PDF and DOCX libraries
  * are loaded on demand so they stay out of the initial page bundle.
  */
-export async function downloadDocument(nda: LegalDocument, format: DownloadFormat, fileName: string) {
+export async function downloadDocument(doc: LegalDocument, format: DownloadFormat, fileName: string) {
   if (format === "pdf") {
     const [{ pdf }, { DocumentPdf }] = await Promise.all([
       import("@react-pdf/renderer"),
       import("./DocumentPdf"),
     ]);
-    saveBlob(await pdf(<DocumentPdf nda={nda} />).toBlob(), fileName);
+    saveBlob(await pdf(<DocumentPdf doc={doc} />).toBlob(), fileName);
   } else {
     const { documentToDocxBlob } = await import("./documentDocx");
-    saveBlob(await documentToDocxBlob(nda), fileName);
+    saveBlob(await documentToDocxBlob(doc), fileName);
   }
 }

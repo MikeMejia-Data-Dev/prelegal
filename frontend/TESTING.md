@@ -1,4 +1,4 @@
-# Testing the Mutual NDA Creator
+# Testing the Agreement Creator
 
 ## Automated tests
 
@@ -6,7 +6,7 @@
 | --- | --- |
 | `npm test` | Vitest unit and component tests (node + jsdom), ~2s |
 | `npm run test:e2e` | Playwright end-to-end tests against `next dev` in the locally installed Google Chrome (desktop and Pixel 7 viewports) |
-| `E2E_LIVE=1 E2E_BASE_URL=http://localhost:8000 npx playwright test live-chat` | Real AI conversation against the running container |
+| `E2E_LIVE=1 E2E_BASE_URL=http://localhost:8000 npx playwright test live-chat` | Real AI conversations (NDA, Cloud Service Agreement, unsupported request) against the running container |
 | `npx tsc --noEmit` / `npm run lint` | Type check and lint |
 
 ### Coverage at a glance
@@ -15,17 +15,18 @@
 - **`parseStandardTerms.test.ts`, `templateFidelity.test.ts`**: every clause of `templates/Mutual-NDA.md` is reproduced word for word; no words lost; typographic quotes kept; CRLF input; Cover Page labels and signing statement match `Mutual-NDA-coverpage.md`.
 - **`export/export.test.tsx`, `export/exportContent.test.tsx`**: opens the generated DOCX (`word/document.xml`) and extracts PDF text with pdf.js to check the cover values, party table, all clauses, hyperlinks and XML escaping are actually in the files.
 - **`export/download.test.tsx`**: blob MIME types, download file name, temporary link cleanup, object URL revocation.
-- **`components/NdaCreator.test.tsx`**: chat with a mocked `/api/chat` (history and fields sent each turn, reply shown, waiting state, error handling), live preview, required-field gating of downloads, busy state / double-click protection, HTML escaping.
-- **`e2e/nda.spec.ts`**: real page load with no console errors (hydration), chat driven through a mocked `/api/chat`, real PDF and Word downloads, responsive layout, keyboard use.
-- **`e2e/live-chat.spec.ts`**: opt-in conversation with the real AI.
-- **`backend/tests/test_chat.py`**: prompt assembly, Structured Outputs call, `/api/chat` validation, and one live OpenAI test (skipped without `OPENAI_API_KEY`).
+- **`lib/documents/*.test.ts`**: every template parses into nested clauses with no markup left; `documents.json` covers the whole catalog; generic cover page, placeholders, validation and file names.
+- **`components/DocumentCreator.test.tsx`**: chat with a mocked `/api/chat` (draft sent each turn, reply shown, focus returns to the message box, waiting state, error handling), document list before a choice, NDA and Cloud Service Agreement previews, switching documents, required-field gating of downloads, busy state, HTML escaping.
+- **`e2e/nda.spec.ts`, `e2e/documents.spec.ts`**: real page load with no console errors (hydration), chat driven through a mocked `/api/chat`, real PDF and Word downloads for the NDA and a Cloud Service Agreement, responsive layout, keyboard use and focus.
+- **`e2e/live-chat.spec.ts`**: opt-in conversations with the real AI.
+- **`backend/tests/test_chat.py`**: catalog prompt, Structured Outputs call (NDA and generic fields), the appended follow-up question, `/api/chat` validation, and live OpenAI tests (skipped without `OPENAI_API_KEY`).
 
 ### Regression tests for fixed bugs
 
 These bugs were found by the review and the tests below, and are now fixed. Each has a test that would fail if it came back:
 
 1. DOCX: line breaks in multi-line Purpose/Modifications were lost. Now written as `<w:br/>`.
-2. PDF: characters outside Latin-1 (e.g. `Łódź`, Cyrillic) were garbled by the built-in Helvetica font. Now uses the bundled Noto Sans (`src/lib/nda/export/fonts`, SIL OFL). For characters Noto Sans lacks (CJK, Arabic, Hebrew, emoji, some symbols such as `→`), the PDF button is disabled with an explanation and Word stays available. After changing fonts, run `node scripts/generate-pdf-charset.mjs` (a test fails if you forget).
+2. PDF: characters outside Latin-1 (e.g. `Łódź`, Cyrillic) were garbled by the built-in Helvetica font. Now uses the bundled Noto Sans (`src/lib/export/fonts`, SIL OFL). For characters Noto Sans lacks (CJK, Arabic, Hebrew, emoji, some symbols such as `→`), the PDF button is disabled with an explanation and Word stays available. After changing fonts, run `node scripts/generate-pdf-charset.mjs` (a test fails if you forget).
 3. PDF: a stray hyphen was inserted where a line broke after a bold run ("Confidential Information-"). Hyphenation points are now disabled.
 4. PDF: a cover field taller than a page was clipped and the rest dropped. Fields now flow across pages.
 5. Preview: multi-line Modifications were shown on one line.
@@ -35,7 +36,7 @@ These bugs were found by the review and the tests below, and are now fixed. Each
 
 ## Manual test script
 
-Run `npm run dev` and open http://localhost:3000/nda/ (or start the container and open http://localhost:8000). Repeat the downloads in at least one of Word / LibreOffice and one PDF viewer (Acrobat, Preview, Chrome).
+Run `npm run dev` and open http://localhost:3000/create/ (or start the container and open http://localhost:8000). Repeat the downloads in at least one of Word / LibreOffice and one PDF viewer (Acrobat, Preview, Chrome).
 
 | # | Steps | Expected |
 | --- | --- | --- |

@@ -29,7 +29,7 @@ shape: purpose, effectiveDate (yyyy-mm-dd), mndaTerm (expires after N years, or 
 confidentialityTerm (N years, or perpetual), governingLaw (a US state), jurisdiction (city/county and \
 state for courts), modifications (optional). When you first select it, start from these defaults: \
 purpose "Evaluating whether to enter into a business relationship with the other party.", \
-effectiveDate today, mndaTerm expires after 1 year, confidentialityTerm 1 year. The NDA requires governing law, jurisdiction, both company \
+effectiveDate "{today}", mndaTerm expires after 1 year, confidentialityTerm 1 year. The NDA requires governing law, jurisdiction, both company \
 names, and positive whole years for any term that expires. For every other document use the generic \
 shape: `keyTerms` as a list of {{key, value}} using only that document's keys. Every document has \
 party1 and party2 with company, name (signer), title and noticeAddress (email or postal address); \
@@ -144,5 +144,8 @@ def run_chat(request: ChatRequest) -> ChatResponse:
     """Ask the LLM for its reply, the chosen document, and the updated fields."""
     response = completion(model=MODEL, messages=build_messages(request), response_format=AiTurn)
     turn = AiTurn.model_validate_json(response.choices[0].message.content)
+    # The model occasionally leaves the NDA date blank despite the default in the prompt.
+    if isinstance(turn.fields, NdaFields) and not turn.fields.effectiveDate:
+        turn.fields.effectiveDate = date.today().isoformat()
     reply = f"{turn.reply.strip()} {turn.question.strip()}".strip()
     return ChatResponse(reply=reply, documentId=turn.documentId, fields=turn.fields)

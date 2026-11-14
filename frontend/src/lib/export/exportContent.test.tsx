@@ -62,7 +62,7 @@ async function docxXml(nda: LegalDocument, file = "word/document.xml"): Promise<
 
 /** Text of each PDF page, as extracted by pdf.js. */
 async function pdfPages(nda: LegalDocument): Promise<string[]> {
-  const blob = await pdf(<DocumentPdf nda={nda} />).toBlob();
+  const blob = await pdf(<DocumentPdf doc={nda} />).toBlob();
   const doc = await getDocument({ data: new Uint8Array(await blob.arrayBuffer()), useSystemFonts: false })
     .promise;
   const pages: string[] = [];

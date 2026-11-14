@@ -12,7 +12,7 @@ export default function LoginPage() {
 
   function signIn(event: FormEvent) {
     event.preventDefault();
-    router.push("/nda/");
+    router.push("/create/");
   }
 
   return (

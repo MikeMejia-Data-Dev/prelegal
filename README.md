@@ -17,16 +17,16 @@ Prelegal guides the user through the Cover Page and combines it with the unchang
 This project is currently in progress and is expected to be completed within one week (by November 18,
 2026).
 
-| Agreement | State |
-| --- | --- |
-| Mutual Non-Disclosure Agreement (NDA) | Working prototype |
-| Cloud Service, Service Level, Data Processing, Design Partner, Professional Services, Partnership, Business Associate, Software License, Pilot, AI Addendum | Templates collected, creators not yet built |
+All 11 Common Paper agreements in `catalog.json` can be drafted through the AI chat: Mutual NDA,
+Cloud Service, Service Level, Data Processing, Design Partner, Professional Services, Partnership,
+Business Associate, Software License and Pilot Agreements, and the AI Addendum.
 
-## What the Mutual NDA creator does
+## What the agreement creator does
 
-- A freeform AI chat that asks about your deal and fills in the Cover Page: purpose, effective date,
-  NDA term, confidentiality term, governing law, jurisdiction, modifications, and each party's signer
-  and notice address.
+- A freeform AI chat that finds out which agreement you need and fills in its Cover Page: key terms
+  such as dates, fees and governing law, plus each party's company, signer and notice address. If you
+  ask for something Prelegal can't generate (e.g. a lease), it explains and offers the closest
+  supported agreement. Every reply ends with a follow-up question while information is missing.
 - A live preview of the full agreement that updates as the chat goes, with missing required fields highlighted.
 - Download as PDF or Word (.docx). Both files contain the Standard Terms word for word.
 - Chat messages are sent to the backend, which calls OpenAI (`gpt-4.1-mini`, Structured Outputs) with
@@ -39,6 +39,7 @@ This project is currently in progress and is expected to be completed within one
 | --- | --- |
 | `templates/` | The Common Paper agreement templates, in Markdown, copied unmodified |
 | `catalog.json` | A list of the templates with a short description of each |
+| `documents.json` | Each supported agreement's party roles and Cover Page key terms, used by the chat and the documents |
 | `frontend/` | The web app (Next.js, React, TypeScript, Tailwind), built as static files |
 | `backend/` | FastAPI app (uv project): `/api/chat` (AI), `/api/health`, and the static frontend |
 | `scripts/` | Start and stop scripts for Mac, Linux and Windows (Git Bash) |

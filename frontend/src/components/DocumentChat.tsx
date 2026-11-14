@@ -2,17 +2,16 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { sendChat, type ChatMessage } from "@/lib/nda/chatApi";
-import type { NdaFormData } from "@/lib/nda/types";
+import { sendChat, type ChatMessage, type DraftState } from "@/lib/documents/chatApi";
 
 const GREETING: ChatMessage = {
   role: "assistant",
   content:
-    "Hi! I'll help you draft a Mutual NDA. Who are the two parties, and what is the purpose of sharing confidential information?",
+    "Hi! I can help you draft a legal agreement, like an NDA, a cloud service agreement or a pilot agreement. Which agreement do you need, or what are you trying to do?",
 };
 
-/** Freeform chat with the AI, which fills in the NDA fields as the conversation goes. */
-export function NdaChat({ fields, onFieldsChange }: { fields: NdaFormData; onFieldsChange: (f: NdaFormData) => void }) {
+/** Freeform chat with the AI, which picks the document and fills it in as the conversation goes. */
+export function DocumentChat({ draft, onDraftChange }: { draft: DraftState; onDraftChange: (d: DraftState) => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -35,9 +34,9 @@ export function NdaChat({ fields, onFieldsChange }: { fields: NdaFormData; onFie
     setBusy(true);
     setError(null);
     try {
-      const { reply, fields: updated } = await sendChat(history, fields);
+      const { reply, documentId, fields } = await sendChat(history, draft);
       setMessages([...history, { role: "assistant", content: reply }]);
-      onFieldsChange(updated);
+      onDraftChange({ documentId, fields });
     } catch (e) {
       console.error(e);
       setError("The assistant couldn't respond. Please try again.");

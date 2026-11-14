@@ -28,7 +28,7 @@ const header = async (blob: Blob, length: number) =>
 
 describe("document exports", () => {
   it("renders a multi-page PDF", async () => {
-    const blob = await pdf(<DocumentPdf nda={nda} />).toBlob();
+    const blob = await pdf(<DocumentPdf doc={nda} />).toBlob();
     expect(await header(blob, 5)).toBe("%PDF-");
     const pages = Buffer.from(await blob.arrayBuffer()).toString("latin1").match(/\/Type \/Page\b/g) ?? [];
     expect(pages.length).toBeGreaterThanOrEqual(2);

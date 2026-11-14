@@ -49,12 +49,12 @@ function cell(children: Paragraph[], widthPct: number): TableCell {
   return new TableCell({ children, borders, width: { size: widthPct, type: WidthType.PERCENTAGE } });
 }
 
-function partyTable(nda: LegalDocument): Table {
+function partyTable(doc: LegalDocument): Table {
   const header = new TableRow({
     tableHeader: true,
     children: [
       cell([new Paragraph("")], 26),
-      ...nda.partyLabels.map((label) =>
+      ...doc.partyLabels.map((label) =>
         cell(
           [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: label, bold: true })] })],
           37,
@@ -63,7 +63,7 @@ function partyTable(nda: LegalDocument): Table {
     ],
   });
 
-  const rows = nda.partyRows.map(
+  const rows = doc.partyRows.map(
     (row) =>
       new TableRow({
         // Height in twips (1/20 pt): 48pt for rows signed or dated by hand.
@@ -87,13 +87,13 @@ function partyTable(nda: LegalDocument): Table {
   return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [header, ...rows] });
 }
 
-/** Build the completed NDA as a Word document. */
-export async function documentToDocxBlob(nda: LegalDocument): Promise<Blob> {
+/** Build the completed agreement as a Word document. */
+export async function documentToDocxBlob(doc: LegalDocument): Promise<Blob> {
   const coverPage: (Paragraph | Table)[] = [
-    new Paragraph({ text: nda.title, heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: nda.introHeading.toUpperCase(), heading: HeadingLevel.HEADING_2 }),
-    new Paragraph({ children: runs(nda.intro), spacing: { after: 160 } }),
-    ...nda.coverFields.flatMap((field) => [
+    new Paragraph({ text: doc.title, heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: doc.introHeading.toUpperCase(), heading: HeadingLevel.HEADING_2 }),
+    new Paragraph({ children: runs(doc.intro), spacing: { after: 160 } }),
+    ...doc.coverFields.flatMap((field) => [
       new Paragraph({ text: field.label, heading: HeadingLevel.HEADING_3, keepNext: true }),
       ...(field.description
         ? [new Paragraph({ keepNext: true, children: [new TextRun({ text: field.description, size: 18, color: GRAY })] })]
@@ -103,15 +103,15 @@ export async function documentToDocxBlob(nda: LegalDocument): Promise<Blob> {
         spacing: { after: 120 },
       }),
     ]),
-    new Paragraph({ text: nda.signingStatement, spacing: { before: 160, after: 160 } }),
-    partyTable(nda),
-    new Paragraph({ children: runs(nda.coverAttribution, 16), spacing: { before: 200 } }),
+    new Paragraph({ text: doc.signingStatement, spacing: { before: 160, after: 160 } }),
+    partyTable(doc),
+    new Paragraph({ children: runs(doc.coverAttribution, 16), spacing: { before: 200 } }),
   ];
 
   const standardTerms: Paragraph[] = [
     new Paragraph({ children: [new PageBreak()] }),
-    new Paragraph({ text: nda.standardTerms.title, heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
-    ...nda.standardTerms.clauses.map(
+    new Paragraph({ text: doc.standardTerms.title, heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
+    ...doc.standardTerms.clauses.map(
       (clause) =>
         new Paragraph({
           alignment: AlignmentType.JUSTIFIED,
@@ -124,15 +124,15 @@ export async function documentToDocxBlob(nda: LegalDocument): Promise<Blob> {
           ],
         }),
     ),
-    new Paragraph({ children: runs(nda.standardTerms.attribution, 16), spacing: { before: 200 } }),
+    new Paragraph({ children: runs(doc.standardTerms.attribution, 16), spacing: { before: 200 } }),
   ];
 
-  const doc = new Document({
-    title: nda.title,
+  const word = new Document({
+    title: doc.title,
     creator: "Prelegal",
     styles: { default: { document: { run: { font: FONT, size: 21 } } } },
     sections: [{ children: [...coverPage, ...standardTerms] }],
   });
 
-  return Packer.toBlob(doc);
+  return Packer.toBlob(word);
 }

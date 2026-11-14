@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import date
 from types import SimpleNamespace
 
 import pytest
@@ -87,6 +88,12 @@ def test_run_chat_appends_the_follow_up_question(monkeypatch):
     turn = {"reply": "  Recorded Acme as the provider. ", "question": " Who is the customer? ", "documentId": "csa", "fields": GENERIC}
     monkeypatch.setattr(chat, "completion", fake_completion(turn))
     assert run_chat(ask("Acme is the provider")).reply == "Recorded Acme as the provider. Who is the customer?"
+
+
+def test_run_chat_defaults_a_blank_nda_date_to_today(monkeypatch):
+    turn = {"reply": "Noted.", "question": "Who?", "documentId": "mutual-nda", "fields": {**FIELDS, "effectiveDate": ""}}
+    monkeypatch.setattr(chat, "completion", fake_completion(turn))
+    assert run_chat(ask("NDA")).fields.effectiveDate == date.today().isoformat()
 
 
 def test_chat_endpoint(monkeypatch):
