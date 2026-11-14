@@ -11,6 +11,9 @@ import { describe, expect, it } from "vitest";
 
 import { buildNda, defaultFormData } from "@/lib/nda/buildNda";
 import { parseStandardTerms } from "@/lib/nda/parseStandardTerms";
+import { buildDocument } from "@/lib/documents/buildDocument";
+import { NDA_ID, type DocumentSpec, type GenericFields } from "@/lib/documents/catalog";
+import { parseTemplate } from "@/lib/documents/parseTemplate";
 import type { LegalDocument } from "@/lib/documents/types";
 import type { NdaFormData } from "@/lib/nda/types";
 import { DocumentPdf } from "./DocumentPdf";
@@ -195,4 +198,39 @@ describe("PDF content", () => {
     expect(pages.length).toBeGreaterThanOrEqual(3);
     expect(squash(pages.join(" "))).toContain(squash("Modification 200:"));
   }, 30_000);
+});
+
+describe("other Common Paper agreements", () => {
+  const ROOT = path.resolve(__dirname, "../../../..");
+  const specs: DocumentSpec[] = JSON.parse(readFileSync(path.join(ROOT, "documents.json"), "utf8")).documents;
+  const fields = (spec: DocumentSpec): GenericFields => ({
+    keyTerms: spec.keyTerms.map((t) => ({ key: t.key, value: `${t.label} value` })),
+    party1: { company: "Acme, Inc.", name: "Ada Lovelace", title: "CEO", noticeAddress: "ada@acme.test" },
+    party2: { company: "Globex", name: "Hank Scorpio", title: "CTO", noticeAddress: "hank@globex.test" },
+  });
+  const build = (spec: DocumentSpec) =>
+    buildDocument(spec, fields(spec), parseTemplate(readFileSync(path.join(ROOT, "templates", spec.template), "utf8")));
+
+  it.each(specs.filter((s) => s.id !== NDA_ID).map((s) => [s.name, s] as const))(
+    "%s: the Word file has the key terms, party roles and every clause in full",
+    async (_name, spec) => {
+      const doc = build(spec);
+      const text = squash(await docxText(doc));
+      expect(text).toContain(squash(doc.introHeading.toUpperCase()));
+      for (const label of doc.partyLabels) expect(text).toContain(label);
+      for (const field of doc.coverFields) expect(text).toContain(squash(field.value));
+      for (const clause of doc.standardTerms.clauses) {
+        expect(text).toContain(squash(`${clause.label} ${clause.title} ${clause.body.map((r) => r.text).join("")}`));
+      }
+    },
+  );
+
+  it("the CSA PDF has the party roles and nested clauses", async () => {
+    const doc = build(specs.find((s) => s.id === "csa")!);
+    const text = squash((await pdfPages(doc)).join(" "));
+    expect(text).toContain("PROVIDER");
+    expect(text).toContain("CUSTOMER");
+    expect(text).toContain(squash("1.1 Access and Use."));
+    expect(text).toContain(squash("General Cap Amount value"));
+  });
 });

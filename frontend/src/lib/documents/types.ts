@@ -1,3 +1,11 @@
+/** A signing party's details, shown in the signature table. */
+export interface Party {
+  company: string;
+  name: string;
+  title: string;
+  noticeAddress: string;
+}
+
 /**
  * A piece of inline text. `bold` marks a defined term or heading,
  * `term` marks a reference to a Cover Page term (e.g. "Purpose"),

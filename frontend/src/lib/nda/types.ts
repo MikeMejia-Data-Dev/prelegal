@@ -1,10 +1,6 @@
-/** Values the user enters in the Mutual NDA form. */
-export interface Party {
-  company: string;
-  name: string;
-  title: string;
-  noticeAddress: string;
-}
+import type { Party } from "@/lib/documents/types";
+
+export type { Party };
 
 export type MndaTerm =
   | { kind: "expires"; years: number }

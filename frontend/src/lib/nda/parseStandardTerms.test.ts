@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { parseInline, parseStandardTerms } from "./parseStandardTerms";
+import { parseInline } from "@/lib/documents/parseInline";
+
+import { parseStandardTerms } from "./parseStandardTerms";
 
 const TEMPLATE = readFileSync(
   path.resolve(__dirname, "../../../../templates/Mutual-NDA.md"),

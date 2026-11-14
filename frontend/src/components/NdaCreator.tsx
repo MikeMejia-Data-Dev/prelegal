@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { buildNda, defaultFormData, ndaFileName, todayIso, validate } from "@/lib/nda/buildNda";
 import { downloadDocument, type DownloadFormat } from "@/lib/export/download";
-import { unsupportedPdfCharactersInForm } from "@/lib/export/pdfText";
+import { unsupportedPdfCharactersInDocument } from "@/lib/export/pdfText";
 import type { StandardTerms } from "@/lib/documents/types";
 import type { NdaFormData } from "@/lib/nda/types";
 
@@ -33,7 +33,7 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
   const canDownload = errors.length === 0 && busy === null;
   // The PDF font cannot draw every script (e.g. CJK, Arabic, emoji); rather
   // than produce a garbled agreement, block the PDF and point to Word.
-  const pdfUnsupported = useMemo(() => unsupportedPdfCharactersInForm(form), [form]);
+  const pdfUnsupported = useMemo(() => unsupportedPdfCharactersInDocument(nda), [nda]);
   const isEnabled = (format: DownloadFormat) =>
     canDownload && !(format === "pdf" && pdfUnsupported.length > 0);
 

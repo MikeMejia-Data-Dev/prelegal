@@ -1,4 +1,4 @@
-import type { NdaFormData } from "@/lib/nda/types";
+import type { LegalDocument } from "@/lib/documents/types";
 import { PDF_CHARSET_RANGES } from "./pdfCharset";
 
 const RANGES: [number, number][] = PDF_CHARSET_RANGES.split(";").map((r) => {
@@ -33,16 +33,9 @@ export function unsupportedPdfCharacters(text: string): string[] {
 }
 
 /** Unsupported characters across every user-entered value that appears in the PDF. */
-export function unsupportedPdfCharactersInForm(form: NdaFormData): string[] {
-  const { party1, party2 } = form;
+export function unsupportedPdfCharactersInDocument(doc: LegalDocument): string[] {
   return unsupportedPdfCharacters(
-    [
-      form.purpose,
-      form.governingLaw,
-      form.jurisdiction,
-      form.modifications,
-      ...[party1, party2].flatMap((p) => [p.company, p.name, p.title, p.noticeAddress]),
-    ].join("\n"),
+    [...doc.coverFields.map((f) => f.value), ...doc.partyRows.flatMap((r) => [r.party1, r.party2])].join("\n"),
   );
 }
 
