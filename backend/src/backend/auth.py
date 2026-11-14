@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import os
 import secrets
+import sqlite3
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
@@ -45,17 +46,19 @@ class User(BaseModel):
     email: str
 
 
+def _scrypt(password: str, salt: bytes) -> str:
+    return hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1).hex()
+
+
 def hash_password(password: str) -> str:
     """Salted scrypt hash, stored as 'salt:key' in hex."""
     salt = os.urandom(16)
-    key = hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1)
-    return f"{salt.hex()}:{key.hex()}"
+    return f"{salt.hex()}:{_scrypt(password, salt)}"
 
 
 def verify_password(password: str, stored: str) -> bool:
     salt, key = stored.split(":")
-    candidate = hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt), n=2**14, r=8, p=1)
-    return hmac.compare_digest(candidate.hex(), key)
+    return hmac.compare_digest(_scrypt(password, bytes.fromhex(salt)), key)
 
 
 def create_token(user_id: int) -> str:
@@ -85,13 +88,14 @@ CurrentUser = Annotated[User, Depends(current_user)]
 @router.post("/auth/signup", status_code=status.HTTP_201_CREATED)
 def sign_up(credentials: Credentials) -> Session:
     """Create an account and sign it in."""
-    with connect() as conn:
-        if conn.execute("SELECT 1 FROM users WHERE email = ?", (credentials.email,)).fetchone():
-            raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.")
-        cursor = conn.execute(
-            "INSERT INTO users (email, password_hash) VALUES (?, ?)",
-            (credentials.email, hash_password(credentials.password)),
-        )
+    try:
+        with connect() as conn:
+            cursor = conn.execute(
+                "INSERT INTO users (email, password_hash) VALUES (?, ?)",
+                (credentials.email, hash_password(credentials.password)),
+            )
+    except sqlite3.IntegrityError:
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.")
     return Session(token=create_token(cursor.lastrowid), email=credentials.email)
 
 

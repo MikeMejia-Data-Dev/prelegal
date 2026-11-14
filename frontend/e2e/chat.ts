@@ -36,13 +36,11 @@ export const nda =
 export const setParty = (n: 1 | 2, values: Partial<Party>) =>
   nda((f) => (n === 1 ? { ...f, party1: { ...f.party1, ...values } } : { ...f, party2: { ...f.party2, ...values } }));
 
-/** Open the creator and fail on hydration mismatches or other runtime errors. */
-/** Pretend to be signed in: a stored session plus mocked /api/me and document saving. */
+/** Pretend to be signed in: a stored session plus mocked document saving. */
 export async function mockSignedIn(page: Page) {
   await page.addInitScript(() =>
     localStorage.setItem("prelegal.session", JSON.stringify({ token: "test-token", email: "ada@example.com" })),
   );
-  await page.route("**/api/me", (route) => route.fulfill({ json: { id: 1, email: "ada@example.com" } }));
   await page.route("**/api/documents", (route) =>
     route.fulfill({ status: 201, json: { id: 1, documentId: "x", title: "x", createdAt: "2026-11-14T00:00:00+00:00" } }),
   );

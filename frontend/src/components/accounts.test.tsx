@@ -1,24 +1,21 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiFetch, authenticate, getSession } from "@/lib/auth";
-import { NDA_ID, type DocumentSpec } from "@/lib/documents/catalog";
-import type { Catalog } from "@/lib/documents/draft";
-import { parseTemplate } from "@/lib/documents/parseTemplate";
+import { NDA_ID } from "@/lib/documents/catalog";
 import { defaultFormData } from "@/lib/nda/buildNda";
-import { parseStandardTerms } from "@/lib/nda/parseStandardTerms";
+import { testCatalog } from "@/test/catalog";
 
 const router = { push: vi.fn(), replace: vi.fn() };
 let searchParams = new URLSearchParams();
+let pathname = "/documents/";
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
-  usePathname: () => "/documents/",
+  usePathname: () => pathname,
   useSearchParams: () => searchParams,
 }));
 
@@ -32,16 +29,7 @@ const reply = (status: number, body: unknown) => Promise.resolve(new Response(JS
 const SESSION = { token: "t0k3n", email: "ada@example.com" };
 const signIn = () => localStorage.setItem("prelegal.session", JSON.stringify(SESSION));
 
-const ROOT = path.resolve(__dirname, "../../..");
-const read = (file: string) => readFileSync(path.join(ROOT, file), "utf8");
-const specs: DocumentSpec[] = JSON.parse(read("documents.json")).documents;
-const catalog: Catalog = {
-  specs,
-  ndaTerms: parseStandardTerms(read("templates/Mutual-NDA.md")),
-  templates: Object.fromEntries(
-    specs.filter((s) => s.id !== NDA_ID).map((s) => [s.id, parseTemplate(read(`templates/${s.template}`))]),
-  ),
-};
+const catalog = testCatalog;
 
 beforeEach(() => {
   localStorage.clear();
@@ -139,7 +127,6 @@ describe("AppShell", () => {
 
   it("shows the page, navigation and the user's email once signed in", async () => {
     signIn();
-    fetchMock.mockReturnValue(reply(200, { id: 1, email: "ada@example.com" }));
     render(<AppShell>page content</AppShell>);
     expect(await screen.findByText("page content")).toBeInTheDocument();
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();
@@ -147,9 +134,17 @@ describe("AppShell", () => {
     expect(screen.getByRole("contentinfo")).toHaveTextContent(/subject to legal review/);
   });
 
+  it("marks My documents as current while viewing a saved document", () => {
+    signIn();
+    pathname = "/document/";
+    render(<AppShell>page content</AppShell>);
+    expect(screen.getByRole("link", { name: "My documents" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "New document" })).not.toHaveAttribute("aria-current");
+    pathname = "/documents/";
+  });
+
   it("signs out", async () => {
     signIn();
-    fetchMock.mockReturnValue(reply(200, { id: 1, email: "ada@example.com" }));
     const user = userEvent.setup();
     render(<AppShell>page content</AppShell>);
     await user.click(await screen.findByRole("button", { name: "Sign out" }));

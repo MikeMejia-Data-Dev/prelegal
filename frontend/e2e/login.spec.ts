@@ -6,7 +6,6 @@ const session = { token: "test-token", email: "ada@example.com" };
 
 test("signing up opens the creator", async ({ page }) => {
   await page.route("**/api/auth/signup", (route) => route.fulfill({ status: 201, json: session }));
-  await page.route("**/api/me", (route) => route.fulfill({ json: { id: 1, email: session.email } }));
   await page.goto("/");
   await page.getByRole("link", { name: "Create an account" }).click();
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();

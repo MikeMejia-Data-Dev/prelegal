@@ -23,11 +23,15 @@ const pilot = (company1: string, company2: string) => () => ({
   },
 });
 
-async function signUp(page: Page, email: string) {
-  await page.goto("/signup/");
+async function submitCredentials(page: Page, email: string, button: "Sign in" | "Create account") {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByRole("button", { name: button }).click();
+}
+
+async function signUp(page: Page, email: string) {
+  await page.goto("/signup/");
+  await submitCredentials(page, email, "Create account");
   await expect(page.getByRole("heading", { name: "New document" })).toBeVisible();
 }
 
@@ -53,9 +57,7 @@ test("sign up, save a document by downloading it, and find it again after signin
   await expect(saved).toContainText("Pilot Agreement · Acme, Inc. & Globex");
 
   await page.getByRole("button", { name: "Sign out" }).click();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await submitCredentials(page, email, "Sign in");
   await expect(page.getByRole("heading", { name: "New document" })).toBeVisible();
 
   await page.getByRole("link", { name: "My documents" }).first().click();
@@ -84,8 +86,6 @@ test("a duplicate email gets a clear error", async ({ page }) => {
   await signUp(page, email);
   await page.getByRole("button", { name: "Sign out" }).click();
   await page.goto("/signup/");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Create account" }).click();
+  await submitCredentials(page, email, "Create account");
   await expect(page.getByRole("main").getByRole("alert")).toHaveText("An account with this email already exists.");
 });

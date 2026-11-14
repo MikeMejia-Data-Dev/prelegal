@@ -27,7 +27,8 @@ export function DocumentPreview({ doc }: { doc: LegalDocument }) {
     <article className="mx-auto max-w-[8.5in] space-y-10 bg-white px-6 py-10 font-serif text-[15px] leading-relaxed text-slate-900 shadow-lg ring-1 ring-slate-200 sm:px-14">
       <section aria-label="Cover Page" className="space-y-4">
         <h2 className="text-center text-2xl font-bold">{doc.title}</h2>
-        <p className="border-l-4 border-amber-500 bg-amber-50 px-3 py-2 font-sans text-xs text-amber-900">
+        {/* Mirrors the PDF and Word cover; the on-screen Disclaimer already announces it. */}
+        <p aria-hidden="true" className="border-l-4 border-amber-500 bg-amber-50 px-3 py-2 font-sans text-xs text-amber-900">
           {DRAFT_DISCLAIMER}
         </p>
         <h3 className="pt-2 text-sm font-bold uppercase tracking-wide">{doc.introHeading}</h3>

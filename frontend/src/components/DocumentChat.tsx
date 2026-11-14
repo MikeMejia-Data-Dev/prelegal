@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { sendChat, type ChatMessage, type DraftState } from "@/lib/documents/chatApi";
 
+import { buttonClass } from "./ui";
+
 const GREETING: ChatMessage = {
   role: "assistant",
   content:
@@ -88,7 +90,7 @@ export function DocumentChat({ draft, onDraftChange }: { draft: DraftState; onDr
         <button
           type="submit"
           disabled={busy || !input.trim()}
-          className="rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className={buttonClass.submit}
         >
           Send
         </button>

@@ -54,6 +54,8 @@ def test_save_validates_the_document(signed_in):
     assert save(signed_in, document_id="lease").status_code == 422
     assert save(signed_in, title="").status_code == 422
     assert save(signed_in, fields={"purpose": "x"}).status_code == 422
+    assert save(signed_in, document_id="mutual-nda", fields=GENERIC).status_code == 422
+    assert save(signed_in, document_id="csa", fields=NDA).status_code == 422
 
 
 def test_missing_document_is_404(signed_in):

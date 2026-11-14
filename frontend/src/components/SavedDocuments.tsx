@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 
 import { listDocuments, type DocumentSummary } from "@/lib/documents/savedApi";
 
-const formatDate = (iso: string) =>
+import { buttonClass, ErrorBanner, Loading, pageTitleClass } from "./ui";
+
+const formatSavedAt = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
 
 /** "My documents": every document the user has downloaded, newest first. */
@@ -23,23 +25,16 @@ export function SavedDocuments({ names }: { names: Record<string, string> }) {
     <>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-indigo-950 sm:text-3xl">My documents</h1>
+          <h1 className={pageTitleClass}>My documents</h1>
           <p className="mt-2 text-slate-600">Documents are saved here when you download them.</p>
         </div>
-        <Link
-          href="/create/"
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-        >
+        <Link href="/create/" className={buttonClass.primary}>
           New document
         </Link>
       </header>
 
-      {error && (
-        <p role="alert" className="rounded-lg bg-rose-50 p-4 text-sm text-rose-700">
-          Your documents couldn&apos;t be loaded. Please refresh the page.
-        </p>
-      )}
-      {!error && documents === null && <p className="text-sm text-slate-500">Loading…</p>}
+      {error && <ErrorBanner>Your documents couldn&apos;t be loaded. Please refresh the page.</ErrorBanner>}
+      {!error && documents === null && <Loading />}
       {documents?.length === 0 && (
         <section className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center">
           <h2 className="font-semibold text-indigo-950">No documents yet</h2>
@@ -61,7 +56,7 @@ export function SavedDocuments({ names }: { names: Record<string, string> }) {
                   <span className="block font-medium text-indigo-950">{doc.title}</span>
                   <span className="text-sm text-slate-500">{names[doc.documentId]}</span>
                 </span>
-                <span className="text-sm text-slate-500">{formatDate(doc.createdAt)}</span>
+                <span className="text-sm text-slate-500">{formatSavedAt(doc.createdAt)}</span>
               </Link>
             </li>
           ))}

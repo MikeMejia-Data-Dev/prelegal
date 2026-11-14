@@ -43,7 +43,7 @@ Business Associate, Software License and Pilot Agreements, and the AI Addendum.
 | `catalog.json` | A list of the templates with a short description of each |
 | `documents.json` | Each supported agreement's party roles and Cover Page key terms, used by the chat and the documents |
 | `frontend/` | The web app (Next.js, React, TypeScript, Tailwind), built as static files |
-| `backend/` | FastAPI app (uv project): `/api/chat` (AI), `/api/health`, and the static frontend |
+| `backend/` | FastAPI app (uv project): sign up/in (`/api/auth/*`, `/api/me`), saved documents (`/api/documents`), the AI chat (`/api/chat`, signed-in users only), `/api/health`, and the static frontend |
 | `scripts/` | Start and stop scripts for Mac, Linux and Windows (Git Bash) |
 | `Dockerfile` | Builds the frontend and backend into one container |
 

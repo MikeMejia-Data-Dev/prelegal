@@ -10,6 +10,7 @@ import { unsupportedPdfCharactersInDocument } from "@/lib/export/pdfText";
 
 import { Disclaimer } from "./Disclaimer";
 import { DocumentPreview } from "./DocumentPreview";
+import { buttonClass } from "./ui";
 
 const FORMATS: { format: DownloadFormat; label: string }[] = [
   { format: "pdf", label: "Download PDF" },
@@ -71,7 +72,7 @@ export function DraftView({ draft, saveToHistory = false }: { draft: Draft; save
             type="button"
             onClick={() => handleDownload(format)}
             disabled={!isEnabled(format)}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className={buttonClass.primary}
           >
             {busy === format ? "Preparing…" : label}
           </button>

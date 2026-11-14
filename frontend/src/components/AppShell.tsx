@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { apiFetch, getSession, signOut } from "@/lib/auth";
+import { getSession, signOut } from "@/lib/auth";
 import { LICENSE_URL } from "@/lib/documents/coverPage";
 
 import { Logo } from "./Logo";
@@ -14,21 +14,21 @@ const NAV = [
   { href: "/documents/", label: "My documents" },
 ];
 
+/** A saved document (/document/) belongs to the My documents section. */
+const isCurrent = (pathname: string, href: string) =>
+  pathname === href || (href === "/documents/" && pathname.startsWith("/document/"));
+
 /** Header, navigation and footer for signed-in pages; sends signed-out visitors to sign in. */
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [email, setEmail] = useState<string | null>(null);
 
+  // An expired session is caught by the first API call (401), which signs out.
   useEffect(() => {
-    if (!getSession()) {
-      router.replace("/");
-      return;
-    }
-    apiFetch("/api/me")
-      .then((response) => response.json())
-      .then((user) => setEmail(user.email))
-      .catch(() => {});
+    const session = getSession();
+    if (session) setEmail(session.email);
+    else router.replace("/");
   }, [router]);
 
   function handleSignOut() {
@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     router.push("/");
   }
 
-  if (!email) return <p className="p-8 text-center text-sm text-slate-500">Loading…</p>;
+  if (!email) return null;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -50,7 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={href}
                 href={href}
-                aria-current={pathname === href ? "page" : undefined}
+                aria-current={isCurrent(pathname, href) ? "page" : undefined}
                 className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 aria-[current=page]:bg-indigo-50 aria-[current=page]:text-indigo-700"
               >
                 {label}

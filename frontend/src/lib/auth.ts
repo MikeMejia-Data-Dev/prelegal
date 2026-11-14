@@ -7,11 +7,7 @@ export interface Session {
 }
 
 export function getSession(): Session | null {
-  try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null");
-  } catch {
-    return null;
-  }
+  return JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null");
 }
 
 export function signOut() {
@@ -39,8 +35,6 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   return response;
 }
 
-const VALIDATION_ERROR = "Enter a valid email and a password of at least 8 characters.";
-
 /** Sign in or sign up; stores the session and returns null, or returns an error message. */
 export async function authenticate(mode: "signin" | "signup", email: string, password: string): Promise<string | null> {
   const response = await fetch(`/api/auth/${mode}`, {
@@ -52,7 +46,6 @@ export async function authenticate(mode: "signin" | "signup", email: string, pas
     localStorage.setItem(SESSION_KEY, JSON.stringify(await response.json()));
     return null;
   }
-  if (response.status === 422) return VALIDATION_ERROR;
   if (response.status === 401 || response.status === 409) return (await response.json()).detail;
-  return "Something went wrong. Please try again.";
+  return "Check your email and use a password of at least 8 characters, then try again.";
 }

@@ -70,3 +70,4 @@ def test_accounts_are_gone_after_a_restart(client):
         pass
     with client:
         assert client.get("/api/me", headers={"Authorization": f"Bearer {token}"}).status_code == 401
+

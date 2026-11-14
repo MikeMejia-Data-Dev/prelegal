@@ -3,7 +3,7 @@
 import os
 import sqlite3
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from pathlib import Path
 
 DB_PATH = Path(os.environ.get("PRELEGAL_DB_PATH", "data/prelegal.db"))
@@ -30,9 +30,8 @@ def init_db(path: Path = DB_PATH) -> None:
     """Delete any existing database at `path` and create a fresh schema."""
     path.unlink(missing_ok=True)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(path) as conn:
+    with closing(sqlite3.connect(path)) as conn:
         conn.executescript(SCHEMA)
-    conn.close()
 
 
 @contextmanager
