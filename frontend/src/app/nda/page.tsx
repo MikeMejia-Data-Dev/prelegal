@@ -20,11 +20,10 @@ export default async function NdaPage() {
             Sign out
           </Link>
         </div>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">Mutual NDA Creator</h1>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-indigo-950">Mutual NDA Creator</h1>
         <p className="mt-2 text-slate-600">
-          Fill in the key terms and both parties&apos; details. The Common Paper Mutual Non-Disclosure
-          Agreement updates as you type, and you can download the completed agreement as a PDF or Word
-          document.
+          Chat with the AI assistant about your deal. It fills in the Common Paper Mutual Non-Disclosure
+          Agreement as you talk, and you can download the completed agreement as a PDF or Word document.
         </p>
       </header>
 

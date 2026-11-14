@@ -4,16 +4,39 @@ import JSZip from "jszip";
 
 import { expect, test, type Page } from "@playwright/test";
 
-const coverPage = (page: Page) => page.getByRole("region", { name: "Cover Page" });
-const party = (page: Page, n: 1 | 2) => page.getByRole("group", { name: `Party ${n}` });
+import type { NdaFormData, Party } from "../src/lib/nda/types";
 
-async function fillRequired(page: Page) {
-  await page.getByRole("textbox", { name: /^Governing Law/ }).fill("Delaware");
-  await page.getByRole("textbox", { name: /^Jurisdiction/ }).fill("New Castle, DE");
-  await party(page, 1).getByRole("textbox", { name: /^Company/ }).fill("Acme, Inc.");
-  await party(page, 1).getByRole("textbox", { name: /^Signer name/ }).fill("Ada Lovelace");
-  await party(page, 2).getByRole("textbox", { name: /^Company/ }).fill("Globex");
+const coverPage = (page: Page) => page.getByRole("region", { name: "Cover Page" });
+
+let replyCount = 0;
+
+/** Send a chat message; the mocked /api/chat applies `update` to the fields the page sends. */
+async function say(page: Page, text: string, update: (f: NdaFormData) => NdaFormData) {
+  const reply = `Reply ${++replyCount}`;
+  await page.route(
+    "**/api/chat",
+    async (route) => {
+      const { fields } = route.request().postDataJSON();
+      await route.fulfill({ json: { reply, fields: update(fields) } });
+    },
+    { times: 1 },
+  );
+  await page.getByRole("textbox", { name: "Message" }).fill(text);
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByText(reply)).toBeVisible();
 }
+
+const setParty = (n: 1 | 2, values: Partial<Party>) => (f: NdaFormData) =>
+  n === 1 ? { ...f, party1: { ...f.party1, ...values } } : { ...f, party2: { ...f.party2, ...values } };
+
+const fillRequired = (page: Page) =>
+  say(page, "Acme and Globex under Delaware law", (f) => ({
+    ...f,
+    governingLaw: "Delaware",
+    jurisdiction: "New Castle, DE",
+    party1: { ...f.party1, company: "Acme, Inc.", name: "Ada Lovelace" },
+    party2: { ...f.party2, company: "Globex" },
+  }));
 
 test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
@@ -34,7 +57,9 @@ test("loads with today's date and downloads disabled", async ({ page }) => {
     const p = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   });
-  await expect(page.getByLabel(/^Effective Date/)).toHaveValue(today);
+  const [y, m, d] = today.split("-").map(Number);
+  const long = new Date(y, m - 1, d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  await expect(coverPage(page)).toContainText(long);
   await expect(page.getByRole("button", { name: "Download PDF" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Download Word" })).toBeDisabled();
   await expect(page.getByRole("status")).toContainText("Party 2 company is required.");
@@ -47,14 +72,16 @@ test("renders the full Standard Terms from the templates dataset", async ({ page
   await expect(clauses.last()).toContainText("11. General.");
 });
 
-test("live preview follows the form", async ({ page }) => {
+test("the chat greets the user and the preview follows the AI's updates", async ({ page }) => {
+  await expect(page.getByRole("log", { name: "Conversation" })).toContainText("draft a Mutual NDA");
   await fillRequired(page);
+  await expect(page.getByRole("log", { name: "Conversation" })).toContainText("Acme and Globex under Delaware law");
   await expect(coverPage(page)).toContainText("Delaware");
   await expect(coverPage(page)).toContainText("New Castle, DE");
   await expect(coverPage(page).getByRole("row", { name: /Print Name/ })).toContainText("Ada Lovelace");
   await expect(page.getByRole("status")).toHaveCount(0);
 
-  await page.getByRole("radio", { name: "In perpetuity" }).check();
+  await say(page, "Keep it confidential forever", (f) => ({ ...f, confidentialityTerm: { kind: "perpetual" } }));
   await expect(coverPage(page)).toContainText("In perpetuity.");
 });
 
@@ -89,16 +116,26 @@ test("the page is usable without horizontal scrolling", async ({ page }) => {
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
-test("form controls are reachable by keyboard", async ({ page }) => {
-  await page.getByRole("textbox", { name: /^Purpose/ }).focus();
-  await page.keyboard.press("Tab");
-  await expect(page.getByLabel(/^Effective Date/)).toBeFocused();
+test("the chat can be used with the keyboard", async ({ page }) => {
+  await page.route("**/api/chat", (route) =>
+    route.fulfill({ json: { reply: "Got it.", fields: route.request().postDataJSON().fields } }),
+  );
+  await page.getByRole("textbox", { name: "Message" }).fill("Hello");
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Got it.")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Message" })).toHaveValue("");
+});
+
+test("shows an error when the assistant is unavailable", async ({ page }) => {
+  await page.route("**/api/chat", (route) => route.fulfill({ status: 500 }));
+  await page.getByRole("textbox", { name: "Message" }).fill("Hello");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByRole("region", { name: "Chat" }).getByRole("alert")).toContainText("The assistant couldn't respond");
 });
 
 test("PDF embeds the Unicode font and keeps Latin Extended / Cyrillic names", async ({ page }) => {
   await fillRequired(page);
-  await party(page, 2).getByRole("textbox", { name: /^Company/ }).fill("Łódź Sp. z o.o.");
-  await party(page, 2).getByRole("textbox", { name: /^Signer name/ }).fill("Жуков");
+  await say(page, "Party 2 is Łódź Sp. z o.o.", setParty(2, { company: "Łódź Sp. z o.o.", name: "Жуков" }));
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", { name: "Download PDF" }).click(),
@@ -110,7 +147,7 @@ test("PDF embeds the Unicode font and keeps Latin Extended / Cyrillic names", as
 
 test("PDF is blocked with an explanation for characters the font lacks; Word still works", async ({ page }) => {
   await fillRequired(page);
-  await party(page, 2).getByRole("textbox", { name: /^Signer name/ }).fill("山田");
+  await say(page, "Signer is 山田", setParty(2, { name: "山田" }));
   await expect(page.getByRole("button", { name: "Download PDF" })).toBeDisabled();
   await expect(page.getByRole("note")).toContainText("The PDF can't display these characters: 山 田");
   const [download] = await Promise.all([
@@ -123,9 +160,8 @@ test("PDF is blocked with an explanation for characters the font lacks; Word sti
 
 test("a long email address wraps inside the preview table without stretching its column", async ({ page }) => {
   await fillRequired(page);
-  await party(page, 1)
-    .getByRole("textbox", { name: /^Notice address/ })
-    .fill("averyveryverylongemailaddresswithnobreaks.legal.department@subsidiary.example-corporation.com");
+  const email = "averyveryverylongemailaddresswithnobreaks.legal.department@subsidiary.example-corporation.com";
+  await say(page, "Long email", setParty(1, { noticeAddress: email }));
   const widths = await coverPage(page)
     .locator("thead th")
     .evaluateAll((ths) => ths.map((th) => Math.round(th.getBoundingClientRect().width)));
@@ -136,7 +172,7 @@ test("a long email address wraps inside the preview table without stretching its
 });
 
 test("multi-line Modifications keep their line breaks in the preview", async ({ page }) => {
-  await page.getByRole("textbox", { name: /^MNDA Modifications/ }).fill("1. Section 3(d) deleted.\n2. Term extended.");
+  await say(page, "Two changes", (f) => ({ ...f, modifications: "1. Section 3(d) deleted.\n2. Term extended." }));
   const value = coverPage(page).locator("dt", { hasText: "MNDA Modifications" }).locator("xpath=following-sibling::dd[last()]");
   const box = await value.boundingBox();
   const lineHeight = await value.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
