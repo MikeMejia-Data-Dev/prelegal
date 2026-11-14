@@ -56,18 +56,22 @@ scripts/stop-windows.sh
 
 # Implementation Status
 
-- **PL-2** (done): Mutual NDA creator. A live preview and PDF/Word download, generated client-side in `frontend/`. The original form was replaced by the chat in PL-4.
-- **PL-3** (done): V1 foundation.
+All tickets below are merged to `main` and marked Done in Jira. The Jira workflow has only To Do, In Progress and Done.
+
+- **PL-1** (done): template dataset. Common Paper templates in `templates/` (copied unmodified) and `catalog.json`.
+- **PL-2** (done, PR #3 and #4): Mutual NDA creator. A live preview and PDF/Word download, generated client-side in `frontend/`. The original form was replaced by the chat in PL-4.
+- **PL-3** (done, PR #5): V1 foundation.
   - `backend/src/backend/`: `main.py` (FastAPI, `/api/health`, mounts the static frontend at `/`) and `db.py` (SQLite `users` table recreated on startup; no sign up/sign in endpoints yet).
   - Frontend: fake sign-in at `/` (no auth) leads to the creator (now at `/create/`).
   - The multi-stage `Dockerfile` (Node build, then Python/uv runtime) runs on port 8000. The `scripts/*-{mac,linux,windows}.sh` wrappers call the shared `scripts/start.sh` / `stop.sh`.
   - Tests: `cd backend && uv run pytest`; `cd frontend && npm test`, `npm run test:e2e`. Set `E2E_BASE_URL=http://localhost:8000` to run the e2e tests against the container.
-- **PL-4** (done): AI chat for the Mutual NDA.
+- **PL-4** (done, PR #6): AI chat for the Mutual NDA.
   - `backend/src/backend/chat.py`: stateless `POST /api/chat` (request and response shape extended in PL-5). LiteLLM calls `openai/gpt-4.1-mini` with Structured Outputs. Pydantic models mirror `NdaFormData` in `frontend/src/lib/nda/types.ts`, so keep the two in sync.
   - Frontend: the chat replaced the form. The AI returns the complete fields every turn, and the preview follows them. `next dev` proxies `/api` to `:8000`.
-  - Tests mock the LLM. The live tests are the backend `test_live_llm_fills_fields` (needs `OPENAI_API_KEY`) and `E2E_LIVE=1 E2E_BASE_URL=http://localhost:8000 npx playwright test live-chat`.
-- **PL-5** (done): all catalog documents.
+  - Tests mock the LLM. The live tests are `cd backend && uv run pytest -k live` (needs `OPENAI_API_KEY`) and `E2E_LIVE=1 E2E_BASE_URL=http://localhost:8000 npx playwright test live-chat` against the running container.
+- **PL-5** (done, PR #7): all catalog documents.
   - `documents.json` (repo root) lists each agreement's id, party roles and Cover Page key terms. Both the backend prompt (`backend/src/backend/catalog.py`) and the frontend read it, and the Dockerfile copies it into both stages.
-  - `/api/chat` takes and returns `{documentId, fields}`. `fields` is `NdaFields` for `mutual-nda` and `GenericFields` (`keyTerms` list plus parties) for the rest. The AI returns a separate `question` that the backend appends to `reply`, so every turn ends with a follow-up. Unsupported requests get the closest supported document offered, and nothing is selected until the user agrees.
-  - Frontend: `/create/` page; `lib/documents/` (`parseTemplate`, `buildDocument`, `draft`, `loadCatalog`); renderers in `lib/export/` take any `LegalDocument`. After each reply, focus returns to the message box.
-- **Not yet built**: real authentication (sign up/sign in endpoints and UI) and storing conversations.
+  - `/api/chat` takes and returns `{documentId, fields}`. `fields` is `NdaFields` for `mutual-nda` and `GenericFields` (`keyTerms` list plus parties) for the rest. The AI returns a separate `question` that the backend appends to `reply`, so every turn ends with a follow-up. Unsupported requests get the closest supported document offered, and nothing is selected until the user agrees; a declined alternative is not offered again. A blank NDA `effectiveDate` from the AI defaults to today.
+  - Frontend: `/create/` page lists the agreements until one is chosen. `lib/documents/` holds `parseTemplate`, `buildDocument`, `coverPage` (shared signature table and attribution), `draft` (`fitFields` keeps the parties when the document switches) and `loadCatalog`. The renderers in `lib/export/` take any `LegalDocument`. After each reply, focus returns to the message box.
+  - Adding a document: add a template to `templates/` and `catalog.json`, plus an entry in `documents.json`. If the template uses the same Common Paper markdown format (nested numbered items, `*_link` spans), no code changes are needed.
+- **Next: PL-6** (To Do): support multiple users and final polish. Not built yet: real sign up/sign in (the `users` table exists, but there are no endpoints or UI) and storing users' conversations and documents.
